@@ -1,6 +1,6 @@
 # Alitsa Patcharoen — HR Manager Portfolio
 
-**Live site:** https://alitsa-hr-june-9577.vercel.app · **Repo:** https://github.com/june-alitsa/Portfolio
+**Live site:** https://alitsa-portfolio.vercel.app · **Repo:** https://github.com/june-alitsa/Portfolio
 
 A personal portfolio for a Bangkok-based HR Manager / HR Business Partner, built as a single-page React app. Same stack as [PIM-DATA/portfolio](https://github.com/PIM-DATA/portfolio), but its own design: a dark editorial layout — warm black with a paper-grain texture, Plus Jakarta Sans headlines with gold highlights, numbered sections, a year-led experience timeline, alternating work rows, and an inverted ink block for the featured case study.
 

@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0b0a08;
+  --color-surface: #14120d;
+  --color-surface-2: #1c1913;
+  --color-ink: #f6f1e8;
+  --color-fg: #f6f1e8;
+  --color-muted: #bdb3a0;
+  --color-faint: #6c6455;
+  --color-line: #2a2519;
+  --color-accent: #f2c14e;
+  --color-accent-deep: #9a7420;
+  --color-accent-ink: #0b0a08;
+
+  /* chart palette (dark, surface #0b0a08) */
+  --color-series-1: #d9a53a;
+  --color-series-2: #3aa9b8;
+  --color-series-3: #9b8fe6;
+  --color-div-neg: #e66767;
+  --color-div-mid: #55503f;
+
+  --font-display: "Plus Jakarta Sans", "Anuphan", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "DM Sans", "Anuphan", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "DM Mono", "Anuphan", ui-monospace, Menlo, monospace;
+}
+
+html { color-scheme: dark; scroll-behavior: smooth; }
+body {
+  font-size: 17px;
+  line-height: 1.6;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  /* paper grain */
+  background-image: radial-gradient(rgb(255 255 255 / 0.035) 0.6px, transparent 0.6px);
+  background-size: 6px 6px;
+}
+/* ภาษาไทยต้องการระยะบรรทัดมากกว่า และไม่บีบตัวอักษร */
+html[lang="th"] body { line-height: 1.8; }
+html[lang="th"] .display { letter-spacing: 0; line-height: 1.25; }
+html[lang="th"] h2.display { font-size: clamp(1.9rem, 3.4vw, 2.75rem); }
+html[lang="th"] h3.display { text-wrap: balance; }
+html[lang="th"] .label { letter-spacing: 0.04em; }
+::selection { background: var(--color-accent); color: var(--color-accent-ink); }
+
+.display { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.025em; }
+.display em { font-style: normal; font-weight: 500; color: var(--color-accent); }
+.mono { font-family: var(--font-mono); }
+.label { @apply font-sans text-xs font-medium uppercase tracking-[0.1em] text-muted; }
+
+.rule { border-top: 1px solid var(--color-ink); }
+.card { @apply rounded-[4px] border border-line bg-surface; }
+.chip { @apply font-mono inline-flex items-center rounded-[3px] border border-line bg-surface px-2.5 py-1 text-[11px] text-fg; }
+
+.btn-ink { @apply inline-flex items-center gap-2 rounded-full bg-ink px-5 py-3 text-sm font-medium text-bg transition-all duration-200 hover:bg-accent; }
+.btn-line { @apply inline-flex items-center gap-2 rounded-full border border-ink px-5 py-3 text-sm font-medium text-ink transition-all duration-200 hover:bg-ink hover:text-bg; }
+
+.link-ul { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; text-decoration-color: var(--color-line); transition: text-decoration-color .2s, color .2s; }
+.link-ul:hover { text-decoration-color: var(--color-accent); color: var(--color-accent); }
+
+.viz-tip {
+  @apply font-mono pointer-events-none absolute z-10 rounded-[3px] bg-ink px-2.5 py-1.5 text-[11px] text-bg shadow-lg;
+  transform: translate(-50%, calc(-100% - 10px));
+  white-space: nowrap;
+}
+.viz-tip .text-muted { color: var(--color-faint); }
+
+/* ตัวเลขสถิติ */
+.stat-num { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+
+/* รูป hero ทรงโค้ง */
+.arch { border-radius: 999px 999px 8px 8px; }
+
+/* inverted (cream) block on the dark page */
+.ink-block { background: var(--color-ink); color: var(--color-bg); }
+.ink-block .label { color: #6c6455; }
+.ink-block .text-accent { color: var(--color-accent-deep); }
+.ink-block .chip { background: transparent; border-color: rgb(11 10 8 / 0.25); color: var(--color-bg); }
+.ink-block a.bg-accent { background: var(--color-bg); color: var(--color-ink); }
+
+/* ── ลูกเล่นพื้นหลัง ── */
+.spotlight {
+  position: absolute; inset: 0;
+  background: radial-gradient(520px circle at var(--mx, -999px) var(--my, -999px), rgb(242 193 78 / 0.07), transparent 60%);
+  transition: background .15s ease-out;
+}
+.aurora { position: absolute; border-radius: 9999px; filter: blur(110px); opacity: .5; will-change: transform; }
+.aurora-a { width: 55vw; height: 55vw; max-width: 760px; max-height: 760px; right: -18vw; top: -22vh; background: rgb(242 193 78 / 0.13); animation: aurora-a 30s ease-in-out infinite alternate; }
+.aurora-b { width: 40vw; height: 40vw; max-width: 560px; max-height: 560px; left: -14vw; top: 55vh; background: rgb(58 169 184 / 0.08); animation: aurora-b 36s ease-in-out infinite alternate; }
+@keyframes aurora-a { from { transform: translate(0,0) scale(1); } to { transform: translate(-14vw, 16vh) scale(1.15); } }
+@keyframes aurora-b { from { transform: translate(0,0) scale(1); } to { transform: translate(18vw, -12vh) scale(0.9); } }
+@media (prefers-reduced-motion: reduce) { .aurora { animation: none; } .spotlight { display: none; } }
+
+/* การ์ด/ช่องเครื่องมือ: ยกขึ้น + ขอบทองเมื่อชี้ */
+.card { transition: border-color .25s ease, transform .25s ease, box-shadow .25s ease; }
+.card:hover { border-color: rgb(242 193 78 / 0.45); transform: translateY(-3px); box-shadow: 0 24px 60px -30px rgb(242 193 78 / 0.35); }
+.tool-tile { transition: background-color .2s ease; }
+.tool-tile:hover { background: var(--color-surface-2); }
+
+/* เลขลำดับ section เป็นลายน้ำจางๆ */
+.watermark { font-family: var(--font-display); font-weight: 700; font-size: clamp(6rem, 16vw, 14rem); line-height: 1; letter-spacing: -0.05em; color: transparent; -webkit-text-stroke: 1px rgb(246 241 232 / 0.07); user-select: none; }
+
+/* ลิงก์เมนู: เส้นใต้ทองวิ่งจากซ้าย */
+.nav-link { position: relative; }
+.nav-link::after { content: ''; position: absolute; left: 0; right: 0; bottom: -6px; height: 1px; background: var(--color-accent); transform: scaleX(0); transform-origin: left; transition: transform .25s ease; }
+.nav-link:hover::after, .nav-link[aria-current="true"]::after { transform: scaleX(1); }

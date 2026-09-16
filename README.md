@@ -31,6 +31,7 @@ src/
   data/profile.js      all English copy: profile, stats, skills, tools, experience, projects, case study, ui strings
   data/profile.th.js   Thai copy (same shape; untranslated fields are pulled from profile.js)
   i18n.jsx             language context + TH/EN toggle state
+cv/cv.html             source of the CV PDF (with portfolio / GitHub links)
   components/          page sections (Hero, About, Experience, Work, CaseStudy, Footer, Nav) + Effects.jsx (motion helpers)
   charts/hr.jsx        illustrative SVG charts used on project cards
 ```
@@ -54,7 +55,7 @@ Alitsa Patcharoen · Bangkok · june.alitsa@gmail.com
 
 - ข้อความภาษาอังกฤษแก้ที่ `src/data/profile.js` · ภาษาไทยแก้ที่ `src/data/profile.th.js` (ชื่อบริษัทยังเป็นอังกฤษตาม CV เปลี่ยนได้ในไฟล์ไทย)
 - ภาษาเริ่มต้นตั้งที่ `src/i18n.jsx` (บรรทัด `return 'en'`) — ผู้เข้าชมสลับได้เองที่ปุ่ม TH/EN บน nav — Experience ให้ตรงตาม CV, `featured: true` = ผลงานที่โชว์หน้าแรก
-- เปลี่ยน CV: วางไฟล์ทับ `public/Alitsa-Patcharoen-CV.pdf` · รูปโปรไฟล์ `public/profile.jpg` · รูป OG (แชร์ลิงก์) `public/og.jpg`
+- CV สร้างจาก `cv/cv.html` → พิมพ์เป็น PDF ด้วย headless Chrome (`--print-to-pdf`) แล้ว copy ไป `public/Alitsa-Patcharoen-CV.pdf` — แก้ข้อความใน cv.html แล้วรันใหม่ · รูปโปรไฟล์ `public/profile.jpg` · รูป OG (แชร์ลิงก์) `public/og.jpg`
 - ใส่ LinkedIn / LINE: `profile.linkedin`, `profile.line` ใน `profile.js` (จะโผล่ที่ footer)
 - ใบเซอร์: ใส่รูปใน `public/certs/` แล้วเพิ่มใน `certifications` (ตอนนี้ว่าง = ซ่อนการ์ด)
 - กราฟบนการ์ดผลงาน: `src/charts/hr.jsx` (ตัวเลขทั้งหมดเป็นค่าจำลอง)

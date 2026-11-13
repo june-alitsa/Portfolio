@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base target="_top">
+<title>เดโมระบบประเมิน 360 องศา</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* แนว D: อ่อนโยน พาสเทล — พื้นครีมอ่อน สีหลักเขียวอมฟ้า คะแนนไล่สีพาสเทลชมพู → เขียว */
+  :root {
+    --bg: #fbfaf7; --card: #ffffff; --sunk: #efede9; --line: #e7e3dc; --line-2: #d9d4cc;
+    --ink: #1f2a28; --text-2: #5e6b68; --muted: #6b7673;
+    --accent: #1f6f68; --accent-ink: #174f4a; --accent-soft: #eef7f5;
+    --ok: #2f6b3f; --warn: #8f4a1c; --danger: #a12b39; --peach: #fdf1e7;
+    --r-control: 14px; --r-card: 24px;
+    --ease: cubic-bezier(.2,.7,.2,1);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: 'Anuphan', 'Noto Sans Thai', system-ui, -apple-system, sans-serif; font-size: 16px; line-height: 1.55; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 16px 16px 40px; }
+  .wrap.wide { max-width: 1200px; padding: 24px 24px 48px; }
+  .card { background: var(--card); border-radius: var(--r-card); padding: 20px; border: 1px solid var(--line); }
+  h1 { font-size: 28px; font-weight: 600; margin: 0 0 4px; line-height: 1.3; }
+  h2 { font-size: 20px; font-weight: 500; margin: 0 0 4px; }
+  h3 { font-size: 16px; font-weight: 500; margin: 0 0 12px; }
+  b, strong { font-weight: 500; }
+  .muted { color: var(--text-2); font-size: 14px; }
+  .small { font-size: 13px; }
+  .eyebrow { font-size: 13px; color: var(--muted); }
+  .center { text-align: center; }
+  .stack > * + * { margin-top: 12px; }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .spacer { flex: 1; }
+  .num, .tick { font-variant-numeric: tabular-nums; }
+  .tick { display: inline-block; font-size: 14px; color: var(--text-2); }
+  /* ลายเซ็น: ช่องคะแนนพาสเทลตามระดับ (ใช้ทั้งปุ่มให้คะแนนและ Dashboard) */
+  .chipscore { display: inline-flex; align-items: center; justify-content: center; min-width: 64px; height: 40px; padding: 0 12px; border-radius: 14px; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .chipscore.sm { min-width: 52px; height: 32px; font-size: 15px; border-radius: 10px; }
+  .chipscore.none { border: 1px dashed var(--line-2); color: var(--text-2); font-weight: 400; font-size: 14px; }
+
+  .hero { text-align: center; padding: 32px 8px 20px; }
+  .hero h1 { font-size: 28px; }
+
+  label.f { display: block; font-weight: 500; margin-bottom: 8px; font-size: 15px; }
+  input.in, select.in, textarea.in { width: 100%; padding: 12px 16px; min-height: 52px; border: 1px solid var(--line-2); border-radius: var(--r-control); background: #fff; font-size: 17px; transition: border-color .15s var(--ease); }
+  input.in:focus, select.in:focus, textarea.in:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  input.pin { letter-spacing: 12px; text-align: center; font-size: 28px; font-variant-numeric: tabular-nums; }
+  textarea.in { font-size: 16px; min-height: 140px; resize: vertical; }
+  select.sm, input.sm { padding: 8px 12px; min-height: 40px; font-size: 14px; width: auto; }
+
+  .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 56px; padding: 12px 24px;
+    border: 0; border-radius: 28px; background: var(--accent); color: #fff; font-weight: 500; font-size: 17px; cursor: pointer;
+    transition: background-color .15s var(--ease), transform .1s var(--ease); }
+  .btn:hover { background: var(--accent-ink); }
+  .btn:active { transform: scale(.98); }
+  .btn[disabled] { opacity: .45; cursor: default; }
+  .btn.ghost { background: var(--card); color: var(--ink); border: 1px solid var(--line-2); }
+  .btn.ghost:hover { background: var(--sunk); }
+  .btn.ok { background: var(--accent); }
+  .btn.sm { min-height: 44px; font-size: 15px; width: auto; padding: 8px 20px; border-radius: 22px; }
+  .link { background: none; border: 0; color: var(--accent-ink); font-weight: 500; padding: 8px 0; min-height: 44px; cursor: pointer; }
+  .err { background: #fbeceb; color: var(--danger); padding: 12px 16px; border-radius: var(--r-control); font-size: 14px; }
+  .note { background: var(--sunk); color: var(--text-2); padding: 12px 16px; border-radius: var(--r-control); font-size: 14px; }
+  .warn { background: #fbf3e6; color: var(--warn); padding: 12px 16px; border-radius: var(--r-control); font-size: 14px; }
+
+  .bar { height: 8px; background: var(--sunk); border-radius: 4px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: var(--accent); border-radius: 4px; transition: width .3s var(--ease); }
+
+  /* วงกลมชื่อ/รูป: สีกลางเดียวกันทุกคน */
+  .ava { position: relative; overflow: hidden; flex: none; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center;
+    font-weight: 500; font-size: 18px; color: var(--accent); background: #e3efe9; }
+  .ava img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .ava.zoom { cursor: zoom-in; }
+  #photoView { position: fixed; inset: 0; background: rgba(28,25,23,.8); display: flex; align-items: center; justify-content: center; z-index: 60; }
+  #photoView img { width: min(80vw, 360px); height: min(80vw, 360px); object-fit: cover; border-radius: 24px; }
+
+  .pick, .task { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 12px 16px; min-height: 72px;
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--r-card); cursor: pointer; transition: background-color .15s var(--ease), border-color .15s var(--ease); }
+  .pick:hover, .task:hover { border-color: var(--line-2); }
+  .pick:active, .task:active { background: var(--sunk); }
+  .pick .t1, .task .t1 { font-weight: 500; font-size: 17px; }
+  .task.done { cursor: default; background: transparent; border-color: transparent; }
+  .task.done .ava { color: var(--muted); background: var(--sunk); }
+  .pill { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 500; border-radius: 16px; padding: 4px 16px; background: var(--accent); color: #fff; }
+  .pill.soft { background: var(--accent-soft); color: var(--accent); }
+  .pill.done { background: none; color: var(--ok); font-weight: 400; padding: 4px 0; }
+  .task.done .t1, .task.done .rel { color: var(--muted); }
+  .rel { font-size: 14px; color: var(--text-2); }
+  .status { flex: none; font-size: 14px; font-weight: 500; color: var(--accent-ink); }
+  .task.done .status { color: var(--ok); font-weight: 400; }
+  .chip { display: inline-block; font-size: 13px; padding: 0 8px; line-height: 24px; border-radius: 6px; background: var(--sunk); color: var(--text-2); }
+  .chip.self { background: var(--sunk); color: var(--text-2); }
+  .dot { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-2); white-space: nowrap; }
+  .dot::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .dot.st-ok { color: var(--ok); } .dot.st-warn { color: var(--warn); } .dot.st-none { color: var(--muted); }
+
+  .qhead { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .qtext { font-size: 28px; font-weight: 600; line-height: 1.3; margin: 8px 0 8px; }
+  .crit { font-size: 16px; color: var(--text-2); margin: 0 0 20px; line-height: 1.55; }
+  .who { font-size: 14px; color: var(--text-2); }
+  /* จุดเด่นฝั่งมือถือ: ปุ่มคะแนนแบบตาราง 3×2 หน้ายิ้มบนกรอบพาสเทล */
+  .scale { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .opt { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 16px 4px 12px; min-height: 124px;
+    border: 1px solid var(--line); border-radius: 20px; background: var(--card); cursor: pointer; font-size: 14px; color: var(--ink); line-height: 1.3; text-align: center;
+    transition: border-color .15s var(--ease), background-color .15s var(--ease), transform .1s var(--ease); }
+  .opt .face { width: 60px; height: 60px; border-radius: 22px; display: grid; place-items: center; }
+  .opt:hover { border-color: var(--line-2); }
+  .opt:active { transform: scale(.97); }
+  .opt.sel { border: 2px solid var(--accent); background: var(--accent-soft); color: var(--accent-ink); font-weight: 500; }
+  .opt.na { background: transparent; border-style: dashed; border-color: var(--line-2); color: var(--text-2); }
+  .opt.na b { font-size: 20px; font-weight: 500; }
+  .opt.na.sel { border-style: solid; }
+
+  .review-item { display: flex; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .review-item:last-child { border-bottom: 0; }
+  .review-item .q { flex: 1; font-size: 15px; }
+  .review-item .a { flex: none; font-size: 14px; color: var(--text-2); text-align: right; display: inline-flex; gap: 8px; align-items: center; }
+  .review-item .face { width: 28px; height: 28px; border-radius: 10px; display: grid; place-items: center; }
+
+  #toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 8px); opacity: 0; visibility: hidden; background: var(--ink); color: #fff;
+    padding: 12px 20px; border-radius: var(--r-control); font-size: 15px; transition: opacity .2s var(--ease), transform .2s var(--ease), visibility .2s; z-index: 50; max-width: 90vw; text-align: center; }
+  #toast.show { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+  .spin { width: 32px; height: 32px; border: 3px solid var(--sunk); border-top-color: var(--accent); border-radius: 50%; animation: sp 0.8s linear infinite; margin: 40px auto; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+
+  /* Dashboard HR */
+  .tabs { display: inline-flex; gap: 4px; background: var(--sunk); border-radius: 24px; padding: 4px; }
+  .tabs button { background: none; border: 0; padding: 8px 20px; min-height: 40px; color: var(--ink); cursor: pointer; border-radius: 20px; font-size: 15px; }
+  .tabs button.on { background: var(--accent); color: #fff; font-weight: 500; }
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .kpi .v { font-size: 36px; font-weight: 600; line-height: 1.2; font-variant-numeric: tabular-nums; }
+  .kpis.d { grid-template-columns: 2fr 1fr 1fr 1fr; }
+  .kpi.hero { background: var(--accent-soft); border-color: transparent; display: flex; align-items: center; gap: 24px; }
+  .prow { display: grid; grid-template-columns: 48px minmax(0, 1fr) 76px minmax(120px, 200px) 120px; gap: 16px; align-items: center; padding: 12px 16px; border-radius: 20px; cursor: pointer; transition: background-color .15s var(--ease); }
+  .prow:hover { background: #f6f4f0; }
+  .prow .nm { display: flex; flex-direction: column; min-width: 0; }
+  .prow .nm b { font-size: 16px; }
+  .fchips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .fchips button { border: 0; border-radius: 16px; padding: 4px 16px; min-height: 36px; background: var(--sunk); color: var(--ink); font-size: 14px; cursor: pointer; }
+  .fchips button.on { background: var(--accent); color: #fff; }
+  .tone-card { border-radius: var(--r-card); padding: 24px; }
+  .ccard { background: #f6f4f0; border-radius: 18px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; }
+  .ccard .k { font-size: 12px; }
+  .kpi .l { font-size: 14px; color: var(--text-2); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  table.t { width: 100%; border-collapse: collapse; font-size: 15px; }
+  table.t th { text-align: left; font-weight: 500; font-size: 13px; color: var(--muted); padding: 8px; border-bottom: 1px solid var(--line-2); white-space: nowrap; }
+  table.t td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  table.t tr.click { cursor: pointer; }
+  table.t tr.click:hover td { background: #faf9f7; }
+  table.t td.num, table.t th.num { text-align: right; }
+  table.t td.c, table.t th.c { text-align: center; }
+  .hb { display: flex; align-items: center; gap: 8px; min-width: 160px; }
+  .hb .track { flex: 1; height: 6px; background: var(--sunk); border-radius: 3px; overflow: hidden; }
+  .hb .track i { display: block; height: 100%; border-radius: 3px; background: var(--accent); }
+  .hb b { width: 56px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+  .low { color: var(--warn); }
+  .big { font-size: 56px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+  .gbar { display: grid; grid-template-columns: minmax(112px, 280px) 1fr 56px; gap: 12px; align-items: center; margin: 8px 0; }
+  .gbar .track { height: 10px; background: var(--sunk); border-radius: 5px; overflow: hidden; }
+  .gbar .track i { display: block; height: 100%; border-radius: 5px; background: var(--accent); }
+  .gbar .track i.self { background: #cfcac2; }
+  .gbar .track i.lowbar { background: #e7a77b; }
+  .gbar .n { font-size: 13px; color: var(--muted); }
+  .gbar b { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+  /* จุดเด่นฝั่ง HR: กราฟ ตัวเอง vs ผู้อื่น */
+  .db-row { display: grid; grid-template-columns: minmax(140px, 300px) 1fr 132px; gap: 16px; align-items: center; min-height: 44px; }
+  .db-track { position: relative; height: 28px; }
+  .db-track .base { position: absolute; left: 0; right: 0; top: 13px; height: 2px; background: var(--sunk); }
+  .db-track .seg { position: absolute; top: 11px; height: 6px; background: #d5e8e3; border-radius: 3px; }
+  .db-track .seg.over { background: #fadcc6; }
+  .db-track .pt { position: absolute; top: 5px; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%; }
+  .db-track .pt.self { background: var(--card); border: 2px solid #a8a29e; }
+  .db-track .pt.oth { background: var(--accent); border: 2px solid var(--card); box-shadow: 0 0 0 1px var(--accent); }
+  .db-vals { font-size: 14px; color: var(--text-2); text-align: right; font-variant-numeric: tabular-nums; }
+  .db-axis { position: relative; height: 20px; font-size: 12px; color: var(--muted); }
+  .db-axis span { position: absolute; transform: translateX(-50%); }
+  .legend { display: flex; gap: 16px; font-size: 13px; color: var(--text-2); }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; vertical-align: -1px; }
+  /* ตัวเองมอง vs คนอื่นมอง: แท่งคู่ต่อหมวด */
+  .sv-row { padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .sv-row:last-child { border-bottom: 0; padding-bottom: 4px; }
+  .sv-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; font-size: 15px; font-weight: 500; }
+  .sv-tag { flex: none; font-size: 13px; font-weight: 500; padding: 2px 12px; border-radius: 12px; background: var(--sunk); color: var(--text-2); }
+  .sv-tag.over { background: #fadcc6; color: #7a3f17; }
+  .sv-tag.under { background: #dcefc9; color: #3d5a1c; }
+  .sv-bar { display: grid; grid-template-columns: 84px 1fr 48px; gap: 12px; align-items: center; margin: 4px 0; }
+  .sv-l { font-size: 13px; color: var(--text-2); }
+  .sv-track { height: 12px; background: var(--sunk); border-radius: 6px; overflow: hidden; }
+  .sv-track i { display: block; height: 100%; border-radius: 6px; background: var(--accent); }
+  .sv-bar.self .sv-track i { background: #cfcac2; }
+  .sv-bar b { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+  .sv-bar.oth b { color: var(--accent-ink); font-weight: 600; }
+  .sv-bar.self b { color: var(--text-2); }
+  .legend i.sq { border-radius: 3px; }
+  ul.clean { margin: 0; padding-left: 20px; }
+  ul.clean li { margin: 4px 0; }
+  details summary { cursor: pointer; font-weight: 500; color: var(--accent-ink); min-height: 32px; }
+
+  #demoBar[hidden], [hidden] { display: none !important; }
+  #demoBar { background: #292524; color: #fff; font-size: 14px; padding: 8px 12px; display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; }
+  #demoBar button { background: #44403c; color: #fff; border: 0; border-radius: 8px; padding: 4px 12px; min-height: 32px; cursor: pointer; font-size: 14px; }
+  #demoBar button.on { background: var(--accent); }
+  @media (max-width: 760px) { .kpis, .kpis.d { grid-template-columns: 1fr 1fr; } .kpi.hero { grid-column: 1 / -1; }
+    .prow { grid-template-columns: 44px minmax(0, 1fr) 64px; } .prow .hide-sm { display: none; } .grid2 { grid-template-columns: 1fr; } .hide-sm { display: none; }
+    .db-row { grid-template-columns: 1fr; gap: 4px; } .db-vals { text-align: left; } }
+  /* ===== รายงานสำหรับพิมพ์ / บันทึก PDF (A4 หน้าเดียว) ===== */
+  /* บนจอ: วางนอกจอไว้วัดความสูง · ตอนพิมพ์: กระดาษ A4 ขอบ 0 แล้วเว้นขอบเอง เพื่อไม่ให้เบราว์เซอร์แทรกหัว/ท้ายกระดาษ */
+  .printdoc { position: absolute; left: -10000px; top: 0; visibility: hidden; pointer-events: none; color: #1f2a28; background: #fff; }
+  .pd-in { width: 182mm; font-size: 10pt; line-height: 1.45; transform-origin: top left; }
+  .pd-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; padding-bottom: 8px; border-bottom: 2px solid #1f6f68; }
+  .pd-org { font-size: 9pt; color: #5e6b68; }
+  .pd-title { font-size: 17pt; font-weight: 600; line-height: 1.2; margin: 2px 0 0; }
+  .pd-conf { font-size: 8pt; color: #a12b39; border: 1px solid #a12b39; border-radius: 4px; padding: 1px 8px; white-space: nowrap; }
+  .pd-meta { text-align: right; font-size: 8.5pt; color: #5e6b68; line-height: 1.5; }
+  .pd-id { display: grid; grid-template-columns: 1fr 44mm; gap: 6mm; margin: 5mm 0 4mm; align-items: stretch; }
+  .pd-who { display: flex; gap: 4mm; align-items: center; }
+  .pd-who .ava { width: 20mm; height: 20mm; font-size: 18pt; }
+  .pd-name { font-size: 14pt; font-weight: 600; line-height: 1.25; }
+  .pd-kv { display: grid; grid-template-columns: auto 1fr; gap: 0 4mm; font-size: 9pt; margin-top: 1.5mm; }
+  .pd-kv span:nth-child(odd) { color: #6b7673; }
+  .pd-score { border-radius: 4mm; padding: 3mm; text-align: center; display: flex; flex-direction: column; justify-content: center; }
+  .pd-score .v { font-size: 30pt; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; margin: 1mm 0; }
+  .pd-score .l { font-size: 8.5pt; }
+  .pd-sum { background: #fdf1e7; color: #6b3a14; border-radius: 3mm; padding: 2.5mm 4mm; font-size: 9.5pt; margin-bottom: 4mm; }
+  .pd-h { font-size: 10.5pt; font-weight: 600; margin: 4mm 0 2mm; padding-bottom: 1mm; border-bottom: 1px solid #d9d4cc; display: flex; justify-content: space-between; align-items: baseline; }
+  .pd-h small { font-size: 8pt; font-weight: 400; color: #6b7673; }
+  table.pd-t { width: 100%; border-collapse: separate; border-spacing: 0 1mm; font-size: 9pt; table-layout: fixed; }
+  table.pd-t col.c1 { width: 34%; }
+  table.pd-t td + td { border-left: 1mm solid #fff; }
+  table.pd-t th { font-weight: 500; font-size: 8pt; color: #5e6b68; text-align: center; padding: 0 1mm; line-height: 1.25; }
+  table.pd-t th:first-child { text-align: left; }
+  table.pd-t td { text-align: center; padding: 1.2mm 1mm; border-radius: 1.5mm; font-variant-numeric: tabular-nums; }
+  table.pd-t td:first-child { text-align: left; padding-left: 0; }
+  table.pd-t td.tot { font-weight: 600; }
+  table.pd-t tr.sum td { font-weight: 600; }
+  table.pd-t tr.sum td:first-child { padding-top: 2mm; }
+  table.pd-t td.na { color: #9aa29f; }
+  .pd-gap { font-size: 8.5pt; }
+  .pd-gap.over { color: #8f4a1c; font-weight: 500; }
+  .pd-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+  .pd-list { margin: 0; padding: 0; list-style: none; font-size: 9pt; }
+  .pd-list li { display: flex; justify-content: space-between; gap: 3mm; padding: 1mm 0; border-bottom: 1px dotted #d9d4cc; }
+  .pd-list li b { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pd-cm { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5mm 5mm; font-size: 8.8pt; }
+  .pd-cm div { padding: 0.8mm 0 0.8mm 3mm; border-left: 2px solid #d5e8e3; }
+  .pd-cm div span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+  .pd-cm div.dev { border-left-color: #fadcc6; }
+  .pd-cm i { font-style: normal; font-size: 7.5pt; color: #6b7673; display: block; }
+  .pd-note { font-size: 7.8pt; color: #6b7673; margin-top: 3mm; line-height: 1.45; }
+  .pd-sign { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8mm; margin-top: 8mm; font-size: 8.5pt; text-align: center; color: #5e6b68; }
+  .pd-sign div { border-top: 1px solid #1f2a28; padding-top: 1.5mm; }
+  .pd-foot { margin-top: 4mm; padding-top: 1.5mm; border-top: 1px solid #e7e3dc; font-size: 7.5pt; color: #9aa29f; display: flex; justify-content: space-between; }
+  @page { size: A4 portrait; margin: 0; }
+  @media print {
+    #demoBar, .noprint, #toast { display: none !important; }
+    html, body { background: #fff; }
+    .card { border-color: var(--line-2); }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body.has-report #app > .screen { display: none !important; }
+    body.has-report, body.has-report #app { margin: 0; padding: 0; }
+    body.has-report .printdoc { position: static; visibility: visible; width: 210mm; height: calc(var(--ph, 270mm) + 24mm); max-height: 296mm; overflow: hidden; padding: 12mm 14mm; box-sizing: border-box; }
+    body.has-report .pd-in { transform: scale(var(--fit, 1)); }
+  }
+</style>
+<script>window.DEMO_DATA={"config":{"org":"ร้านอาหารตัวอย่าง (ข้อมูลจำลอง)","cycle":"รอบที่ 1 (ธ.ค. 2026)","hrPin":"9999","minAnswered":15},"scale":[{"v":5,"label":"ดีเยี่ยม","emoji":"😄"},{"v":4,"label":"ดี","emoji":"🙂"},{"v":3,"label":"ปานกลาง","emoji":"😐"},{"v":2,"label":"ต้องปรับปรุง","emoji":"🙁"},{"v":1,"label":"ต้องปรับปรุงมาก","emoji":"😟"}],"naLabel":"N/A ไม่มีข้อมูลเพียงพอ","relLabel":{"ประเมินตนเอง":"ตัวคุณเอง","ผู้บังคับบัญชา":"ลูกน้องของคุณ","เพื่อนร่วมงาน":"เพื่อนร่วมทีม","ผู้ร่วมงานต่างฝ่าย":"เพื่อนต่างฝ่าย","ผู้ใต้บังคับบัญชา":"หัวหน้าของคุณ"},"employees":[{"id":"E01","name":"สมชาย ใจดี","nick":"พี่ชาย","position":"ผู้จัดการร้าน","team":"บริหาร","pin":"1001","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2ZkZTY4YScvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjOTI0MDBlJy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyM5MjQwMGUnLz48L3N2Zz4=","qids":["Q01","Q02","Q03","Q04","Q05","Q06","Q07","Q08","Q09","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","T01","T02","T03"]},{"id":"E02","name":"วิภาวรรณ ศรีสุข","nick":"วิ","position":"หัวหน้ากะ (ฟลอร์)","team":"ฟลอร์","pin":"1002","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2JmZGJmZScvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjMWUzYThhJy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyMxZTNhOGEnLz48L3N2Zz4=","qids":["Q01","Q02","Q03","Q04","Q05","Q06","Q07","Q08","Q09","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","T01","T02","T03"]},{"id":"E03","name":"ธนากร มีสุข","nick":"กร","position":"หัวหน้าโซนคาราโอเกะ","team":"คาราโอเกะ","pin":"1003","photo":"","qids":["Q01","Q02","Q03","Q04","Q05","Q06","Q07","Q08","Q09","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","T01","T02","T03"]},{"id":"E04","name":"ประเสริฐ ทองดี","nick":"เสริฐ","position":"หัวหน้าครัว","team":"ครัว","pin":"1004","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2ZiY2ZlOCcvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjODMxODQzJy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyM4MzE4NDMnLz48L3N2Zz4=","qids":["Q01","Q02","Q03","Q04","Q05","Q06","Q07","Q08","Q09","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","T01","T02","T03"]},{"id":"E05","name":"กมลชนก แสงทอง","nick":"แนน","position":"พนักงานเสิร์ฟ","team":"ฟลอร์","pin":"1005","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2RkZDZmZScvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjNGMxZDk1Jy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyM0YzFkOTUnLz48L3N2Zz4=","qids":["Q01","Q02","Q03","Q04","Q05","Q06","Q07","Q08","Q09","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","T01","T02","T03"]},{"id":"E06","name":"ณัฐพล บุญมา","nick":"ต้น","position":"พนักงานเสิร์ฟ","team":"ฟลอร์","pin":"1006","photo":"","qids":["Q01","Q02","Q03","Q04","Q05","Q06","Q07","Q08","Q09","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","T01","T02","T03"]},{"id":"E07","name":"สุดารัตน์ คำแก้ว","nick":"ดา","position":"พนักงานเสิร์ฟ","team":"ฟลอร์","pin":"1007","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2ZkZTY4YScvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjOTI0MDBlJy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyM5MjQwMGUnLz48L3N2Zz4=","qids":["Q01","Q02","Q03","Q04","Q05","Q06","Q07","Q08","Q09","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","T01","T02","T03"]},{"id":"E08","name":"อนุชา พรหมมา","nick":"นุ","position":"พนักงานเสิร์ฟ","team":"ฟลอร์","pin":"1008","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2JmZGJmZScvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjMWUzYThhJy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyMxZTNhOGEnLz48L3N2Zz4=","qids":["Q01","Q02","Q03","Q04","Q05","Q06","Q07","Q08","Q09","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","T01","T02","T03"]},{"id":"E09","name":"ปิยะนุช วงศ์ใหญ่","nick":"ปุ้ย","position":"แคชเชียร์","team":"ฟลอร์","pin":"1009","photo":"","qids":["Q01","Q02","Q03","Q04","Q05","Q06","Q07","Q08","Q09","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","T01","T02","T03"]},{"id":"E10","name":"ชัยวัฒน์ สายบุญ","nick":"ชัย","position":"บาร์เทนเดอร์","team":"ฟลอร์","pin":"1010","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2ZiY2ZlOCcvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjODMxODQzJy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyM4MzE4NDMnLz48L3N2Zz4=","qids":["Q01","Q02","Q03","Q04","Q05","Q06","Q07","Q08","Q09","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","T01","T02","T03"]},{"id":"E11","name":"รัตนา จันทร์เพ็ญ","nick":"นา","position":"พนักงานดูแลห้องคาราโอเกะ","team":"คาราโอเกะ","pin":"1011","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2RkZDZmZScvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjNGMxZDk1Jy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyM0YzFkOTUnLz48L3N2Zz4=","qids":["Q01","Q02","Q03","Q04","Q05","Q06","Q07","Q08","Q09","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","T01","T02","T03"]},{"id":"E12","name":"ศุภชัย แก้วมณี","nick":"บิ๊ก","position":"พนักงานดูแลห้องคาราโอเกะ","team":"คาราโอเกะ","pin":"1012","photo":"","qids":["Q01","Q02","Q03","Q04","Q05","Q06","Q07","Q08","Q09","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","T01","T02","T03"]},{"id":"E13","name":"มาลัย ดวงดี","nick":"ลัย","position":"พนักงานดูแลห้องคาราโอเกะ","team":"คาราโอเกะ","pin":"1013","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2ZkZTY4YScvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjOTI0MDBlJy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyM5MjQwMGUnLz48L3N2Zz4=","qids":["Q01","Q02","Q03","Q04","Q05","Q06","Q07","Q08","Q09","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","T01","T02","T03"]},{"id":"E14","name":"ภานุวัฒน์ ใจงาม","nick":"ภู","position":"บาร์เทนเดอร์ (คาราโอเกะ)","team":"คาราโอเกะ","pin":"1014","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2JmZGJmZScvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjMWUzYThhJy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyMxZTNhOGEnLz48L3N2Zz4=","qids":["Q01","Q02","Q03","Q04","Q05","Q06","Q07","Q08","Q09","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","T01","T02","T03"]},{"id":"E15","name":"จิราพร สมบูรณ์","nick":"จิ๋ว","position":"แคชเชียร์ห้องจัดเลี้ยง","team":"คาราโอเกะ","pin":"1015","photo":"","qids":["Q01","Q02","Q03","Q04","Q05","Q06","Q07","Q08","Q09","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","T01","T02","T03"]},{"id":"E16","name":"สมศักดิ์ บุญเรือง","nick":"ศักดิ์","position":"พ่อครัว","team":"ครัว","pin":"1016","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2ZiY2ZlOCcvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjODMxODQzJy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyM4MzE4NDMnLz48L3N2Zz4=","qids":["Q01","Q02","Q03","Q04","Q05","Q06","Q07","Q08","Q09","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","T01","T02","T03"]},{"id":"E17","name":"อรุณี ทองคำ","nick":"อร","position":"แม่ครัว","team":"ครัว","pin":"1017","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2RkZDZmZScvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjNGMxZDk1Jy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyM0YzFkOTUnLz48L3N2Zz4=","qids":["Q01","Q02","Q03","Q04","Q05","Q06","Q07","Q08","Q09","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","T01","T02","T03"]},{"id":"E18","name":"บุญมี ศรีวงศ์","nick":"มี","position":"ผู้ช่วยครัว","team":"ครัว","pin":"1018","photo":"","qids":["Q01","Q02","Q03","Q04","Q05","Q06","Q07","Q08","Q09","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","T01","T02","T03"]},{"id":"E19","name":"ทองใบ แสนดี","nick":"ใบ","position":"ผู้ช่วยครัว","team":"ครัว","pin":"1019","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2ZkZTY4YScvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjOTI0MDBlJy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyM5MjQwMGUnLz48L3N2Zz4=","qids":["Q01","Q02","Q03","Q04","Q05","Q06","Q07","Q08","Q09","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","T01","T02","T03"]},{"id":"E20","name":"สมหญิง พึ่งบุญ","nick":"หญิง","position":"พนักงานล้างจาน","team":"ครัว","pin":"1020","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2JmZGJmZScvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjMWUzYThhJy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyMxZTNhOGEnLz48L3N2Zz4=","qids":["Q01","Q02","Q03","Q04","Q05","Q06","Q07","Q08","Q09","Q10","Q11","Q12","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","T01","T02","T03"]}],"questions":[{"id":"Q01","category":"ความรับผิดชอบในงาน","text":"ตรงต่อเวลา","criteria":"มาทำงานและส่งงานตามเวลาที่ตกลง","type":"คะแนน"},{"id":"Q02","category":"ความรับผิดชอบในงาน","text":"ทำงานครบถ้วน","criteria":"ทำงานในหน้าที่ให้เสร็จโดยไม่ต้องมีคนตาม","type":"คะแนน"},{"id":"Q03","category":"ความรับผิดชอบในงาน","text":"ใส่ใจคุณภาพ","criteria":"ตรวจทานงานของตัวเองก่อนส่งต่อ","type":"คะแนน"},{"id":"Q04","category":"ความรับผิดชอบในงาน","text":"ยอมรับความผิดพลาด","criteria":"บอกเมื่อทำพลาดและช่วยแก้ไข","type":"คะแนน"},{"id":"Q05","category":"ความรับผิดชอบในงาน","text":"ดูแลอุปกรณ์และพื้นที่","criteria":"ใช้และเก็บของส่วนรวมอย่างระมัดระวัง","type":"คะแนน"},{"id":"Q06","category":"การสื่อสาร","text":"พูดให้เข้าใจง่าย","criteria":"อธิบายเรื่องงานได้ชัด ไม่ต้องถามซ้ำ","type":"คะแนน"},{"id":"Q07","category":"การสื่อสาร","text":"ฟังอย่างตั้งใจ","criteria":"ฟังจนจบก่อนตอบหรือแย้ง","type":"คะแนน"},{"id":"Q08","category":"การสื่อสาร","text":"ส่งต่องานเรียบร้อย","criteria":"ส่งต่อข้อมูลสำคัญตอนเปลี่ยนกะหรือเปลี่ยนคน","type":"คะแนน"},{"id":"Q09","category":"การสื่อสาร","text":"แจ้งเรื่องเร็ว","criteria":"บอกหัวหน้าหรือทีมทันทีเมื่อเจอปัญหา","type":"คะแนน"},{"id":"Q10","category":"การสื่อสาร","text":"สุภาพ","criteria":"ใช้คำพูดและน้ำเสียงเหมาะสมแม้ช่วงงานยุ่ง","type":"คะแนน"},{"id":"Q11","category":"การทำงานเป็นทีม","text":"ช่วยเหลือเพื่อน","criteria":"เข้าไปช่วยเมื่อเห็นเพื่อนงานล้น","type":"คะแนน"},{"id":"Q12","category":"การทำงานเป็นทีม","text":"แบ่งงานยุติธรรม","criteria":"ไม่เลี่ยงงานหรือโยนงานให้คนอื่น","type":"คะแนน"},{"id":"Q13","category":"การทำงานเป็นทีม","text":"เคารพความต่าง","criteria":"ปฏิบัติกับทุกคนอย่างให้เกียรติ","type":"คะแนน"},{"id":"Q14","category":"การทำงานเป็นทีม","text":"คุยกันเมื่อเห็นต่าง","criteria":"แก้ความเห็นต่างด้วยการคุย ไม่ใช้อารมณ์","type":"คะแนน"},{"id":"Q15","category":"การทำงานเป็นทีม","text":"สร้างบรรยากาศดี","criteria":"ทำให้ทีมอยากทำงานด้วย","type":"คะแนน"},{"id":"Q16","category":"การเรียนรู้และพัฒนา","text":"รับคำติชมได้","criteria":"ฟังคำติชมโดยไม่ตั้งแง่","type":"คะแนน"},{"id":"Q17","category":"การเรียนรู้และพัฒนา","text":"ปรับปรุงจริง","criteria":"เห็นการเปลี่ยนแปลงหลังได้รับคำแนะนำ","type":"คะแนน"},{"id":"Q18","category":"การเรียนรู้และพัฒนา","text":"ปรับตัวเร็ว","criteria":"รับมือกับขั้นตอนหรือเมนูใหม่ได้","type":"คะแนน"},{"id":"Q19","category":"การเรียนรู้และพัฒนา","text":"สอนต่อได้","criteria":"ถ่ายทอดสิ่งที่รู้ให้คนใหม่","type":"คะแนน"},{"id":"Q20","category":"การเรียนรู้และพัฒนา","text":"เสนอไอเดีย","criteria":"เสนอวิธีทำงานที่ดีขึ้น","type":"คะแนน"},{"id":"T01","category":"ความคิดเห็น","text":"จุดเด่นที่สังเกตได้","criteria":"ไม่บังคับ","type":"ข้อความ"},{"id":"T02","category":"ความคิดเห็น","text":"เรื่องที่ควรพัฒนา","criteria":"ไม่บังคับ","type":"ข้อความ"},{"id":"T03","category":"ความคิดเห็น","text":"ข้อเสนอแนะเพิ่มเติม","criteria":"ไม่บังคับ","type":"ข้อความ"}],"pairs":[{"pairId":"P0001","raterId":"E01","rateeId":"E01","rel":"ประเมินตนเอง","done":false},{"pairId":"P0002","raterId":"E01","rateeId":"E02","rel":"ผู้บังคับบัญชา","done":false},{"pairId":"P0003","raterId":"E01","rateeId":"E03","rel":"ผู้บังคับบัญชา","done":false},{"pairId":"P0004","raterId":"E01","rateeId":"E04","rel":"ผู้บังคับบัญชา","done":false},{"pairId":"P0005","raterId":"E02","rateeId":"E02","rel":"ประเมินตนเอง","done":false},{"pairId":"P0006","raterId":"E02","rateeId":"E01","rel":"ผู้ใต้บังคับบัญชา","done":false},{"pairId":"P0007","raterId":"E02","rateeId":"E03","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0008","raterId":"E02","rateeId":"E04","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0009","raterId":"E02","rateeId":"E11","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0010","raterId":"E02","rateeId":"E15","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0011","raterId":"E02","rateeId":"E20","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0012","raterId":"E02","rateeId":"E05","rel":"ผู้บังคับบัญชา","done":false},{"pairId":"P0013","raterId":"E02","rateeId":"E06","rel":"ผู้บังคับบัญชา","done":false},{"pairId":"P0014","raterId":"E02","rateeId":"E07","rel":"ผู้บังคับบัญชา","done":false},{"pairId":"P0015","raterId":"E02","rateeId":"E08","rel":"ผู้บังคับบัญชา","done":false},{"pairId":"P0016","raterId":"E02","rateeId":"E09","rel":"ผู้บังคับบัญชา","done":false},{"pairId":"P0017","raterId":"E02","rateeId":"E10","rel":"ผู้บังคับบัญชา","done":false},{"pairId":"P0018","raterId":"E03","rateeId":"E03","rel":"ประเมินตนเอง","done":false},{"pairId":"P0019","raterId":"E03","rateeId":"E01","rel":"ผู้ใต้บังคับบัญชา","done":false},{"pairId":"P0020","raterId":"E03","rateeId":"E02","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0021","raterId":"E03","rateeId":"E04","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0022","raterId":"E03","rateeId":"E08","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0023","raterId":"E03","rateeId":"E16","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0024","raterId":"E03","rateeId":"E20","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0025","raterId":"E03","rateeId":"E11","rel":"ผู้บังคับบัญชา","done":false},{"pairId":"P0026","raterId":"E03","rateeId":"E12","rel":"ผู้บังคับบัญชา","done":false},{"pairId":"P0027","raterId":"E03","rateeId":"E13","rel":"ผู้บังคับบัญชา","done":false},{"pairId":"P0028","raterId":"E03","rateeId":"E14","rel":"ผู้บังคับบัญชา","done":false},{"pairId":"P0029","raterId":"E03","rateeId":"E15","rel":"ผู้บังคับบัญชา","done":false},{"pairId":"P0030","raterId":"E04","rateeId":"E04","rel":"ประเมินตนเอง","done":false},{"pairId":"P0031","raterId":"E04","rateeId":"E01","rel":"ผู้ใต้บังคับบัญชา","done":false},{"pairId":"P0032","raterId":"E04","rateeId":"E02","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0033","raterId":"E04","rateeId":"E03","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0034","raterId":"E04","rateeId":"E08","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0035","raterId":"E04","rateeId":"E15","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0036","raterId":"E04","rateeId":"E16","rel":"ผู้บังคับบัญชา","done":false},{"pairId":"P0037","raterId":"E04","rateeId":"E17","rel":"ผู้บังคับบัญชา","done":false},{"pairId":"P0038","raterId":"E04","rateeId":"E18","rel":"ผู้บังคับบัญชา","done":false},{"pairId":"P0039","raterId":"E04","rateeId":"E19","rel":"ผู้บังคับบัญชา","done":false},{"pairId":"P0040","raterId":"E04","rateeId":"E20","rel":"ผู้บังคับบัญชา","done":false},{"pairId":"P0041","raterId":"E05","rateeId":"E05","rel":"ประเมินตนเอง","done":false},{"pairId":"P0042","raterId":"E05","rateeId":"E02","rel":"ผู้ใต้บังคับบัญชา","done":false},{"pairId":"P0043","raterId":"E05","rateeId":"E06","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0044","raterId":"E05","rateeId":"E07","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0045","raterId":"E05","rateeId":"E08","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0046","raterId":"E05","rateeId":"E09","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0047","raterId":"E05","rateeId":"E03","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0048","raterId":"E05","rateeId":"E11","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0049","raterId":"E05","rateeId":"E16","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0050","raterId":"E06","rateeId":"E06","rel":"ประเมินตนเอง","done":false},{"pairId":"P0051","raterId":"E06","rateeId":"E02","rel":"ผู้ใต้บังคับบัญชา","done":false},{"pairId":"P0052","raterId":"E06","rateeId":"E07","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0053","raterId":"E06","rateeId":"E08","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0054","raterId":"E06","rateeId":"E09","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0055","raterId":"E06","rateeId":"E10","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0056","raterId":"E06","rateeId":"E03","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0057","raterId":"E06","rateeId":"E12","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0058","raterId":"E06","rateeId":"E16","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0059","raterId":"E07","rateeId":"E07","rel":"ประเมินตนเอง","done":false},{"pairId":"P0060","raterId":"E07","rateeId":"E02","rel":"ผู้ใต้บังคับบัญชา","done":false},{"pairId":"P0061","raterId":"E07","rateeId":"E05","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0062","raterId":"E07","rateeId":"E08","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0063","raterId":"E07","rateeId":"E09","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0064","raterId":"E07","rateeId":"E10","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0065","raterId":"E07","rateeId":"E04","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0066","raterId":"E07","rateeId":"E12","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0067","raterId":"E07","rateeId":"E17","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0068","raterId":"E08","rateeId":"E08","rel":"ประเมินตนเอง","done":false},{"pairId":"P0069","raterId":"E08","rateeId":"E02","rel":"ผู้ใต้บังคับบัญชา","done":false},{"pairId":"P0070","raterId":"E08","rateeId":"E05","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0071","raterId":"E08","rateeId":"E06","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0072","raterId":"E08","rateeId":"E09","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0073","raterId":"E08","rateeId":"E10","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0074","raterId":"E08","rateeId":"E04","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0075","raterId":"E08","rateeId":"E12","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0076","raterId":"E08","rateeId":"E17","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0077","raterId":"E09","rateeId":"E09","rel":"ประเมินตนเอง","done":false},{"pairId":"P0078","raterId":"E09","rateeId":"E02","rel":"ผู้ใต้บังคับบัญชา","done":false},{"pairId":"P0079","raterId":"E09","rateeId":"E05","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0080","raterId":"E09","rateeId":"E06","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0081","raterId":"E09","rateeId":"E07","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0082","raterId":"E09","rateeId":"E10","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0083","raterId":"E09","rateeId":"E04","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0084","raterId":"E09","rateeId":"E13","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0085","raterId":"E09","rateeId":"E17","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0086","raterId":"E10","rateeId":"E10","rel":"ประเมินตนเอง","done":false},{"pairId":"P0087","raterId":"E10","rateeId":"E02","rel":"ผู้ใต้บังคับบัญชา","done":false},{"pairId":"P0088","raterId":"E10","rateeId":"E05","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0089","raterId":"E10","rateeId":"E06","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0090","raterId":"E10","rateeId":"E07","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0091","raterId":"E10","rateeId":"E08","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0092","raterId":"E10","rateeId":"E11","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0093","raterId":"E10","rateeId":"E13","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0094","raterId":"E10","rateeId":"E18","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0095","raterId":"E11","rateeId":"E11","rel":"ประเมินตนเอง","done":false},{"pairId":"P0096","raterId":"E11","rateeId":"E03","rel":"ผู้ใต้บังคับบัญชา","done":false},{"pairId":"P0097","raterId":"E11","rateeId":"E12","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0098","raterId":"E11","rateeId":"E13","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0099","raterId":"E11","rateeId":"E14","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0100","raterId":"E11","rateeId":"E15","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0101","raterId":"E11","rateeId":"E02","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0102","raterId":"E11","rateeId":"E09","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0103","raterId":"E11","rateeId":"E18","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0104","raterId":"E12","rateeId":"E12","rel":"ประเมินตนเอง","done":false},{"pairId":"P0105","raterId":"E12","rateeId":"E03","rel":"ผู้ใต้บังคับบัญชา","done":false},{"pairId":"P0106","raterId":"E12","rateeId":"E11","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0107","raterId":"E12","rateeId":"E13","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0108","raterId":"E12","rateeId":"E14","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0109","raterId":"E12","rateeId":"E15","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0110","raterId":"E12","rateeId":"E05","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0111","raterId":"E12","rateeId":"E09","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0112","raterId":"E12","rateeId":"E19","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0113","raterId":"E13","rateeId":"E13","rel":"ประเมินตนเอง","done":false},{"pairId":"P0114","raterId":"E13","rateeId":"E03","rel":"ผู้ใต้บังคับบัญชา","done":false},{"pairId":"P0115","raterId":"E13","rateeId":"E11","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0116","raterId":"E13","rateeId":"E12","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0117","raterId":"E13","rateeId":"E14","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0118","raterId":"E13","rateeId":"E15","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0119","raterId":"E13","rateeId":"E05","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0120","raterId":"E13","rateeId":"E09","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0121","raterId":"E13","rateeId":"E19","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0122","raterId":"E14","rateeId":"E14","rel":"ประเมินตนเอง","done":false},{"pairId":"P0123","raterId":"E14","rateeId":"E03","rel":"ผู้ใต้บังคับบัญชา","done":false},{"pairId":"P0124","raterId":"E14","rateeId":"E11","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0125","raterId":"E14","rateeId":"E12","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0126","raterId":"E14","rateeId":"E13","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0127","raterId":"E14","rateeId":"E15","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0128","raterId":"E14","rateeId":"E05","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0129","raterId":"E14","rateeId":"E10","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0130","raterId":"E14","rateeId":"E19","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0131","raterId":"E15","rateeId":"E15","rel":"ประเมินตนเอง","done":false},{"pairId":"P0132","raterId":"E15","rateeId":"E03","rel":"ผู้ใต้บังคับบัญชา","done":false},{"pairId":"P0133","raterId":"E15","rateeId":"E11","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0134","raterId":"E15","rateeId":"E12","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0135","raterId":"E15","rateeId":"E13","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0136","raterId":"E15","rateeId":"E14","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0137","raterId":"E15","rateeId":"E06","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0138","raterId":"E15","rateeId":"E10","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0139","raterId":"E15","rateeId":"E20","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0140","raterId":"E16","rateeId":"E16","rel":"ประเมินตนเอง","done":false},{"pairId":"P0141","raterId":"E16","rateeId":"E04","rel":"ผู้ใต้บังคับบัญชา","done":false},{"pairId":"P0142","raterId":"E16","rateeId":"E17","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0143","raterId":"E16","rateeId":"E18","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0144","raterId":"E16","rateeId":"E19","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0145","raterId":"E16","rateeId":"E20","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0146","raterId":"E16","rateeId":"E06","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0147","raterId":"E16","rateeId":"E10","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0148","raterId":"E17","rateeId":"E17","rel":"ประเมินตนเอง","done":false},{"pairId":"P0149","raterId":"E17","rateeId":"E04","rel":"ผู้ใต้บังคับบัญชา","done":false},{"pairId":"P0150","raterId":"E17","rateeId":"E16","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0151","raterId":"E17","rateeId":"E18","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0152","raterId":"E17","rateeId":"E19","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0153","raterId":"E17","rateeId":"E20","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0154","raterId":"E17","rateeId":"E06","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0155","raterId":"E17","rateeId":"E14","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0156","raterId":"E18","rateeId":"E18","rel":"ประเมินตนเอง","done":false},{"pairId":"P0157","raterId":"E18","rateeId":"E04","rel":"ผู้ใต้บังคับบัญชา","done":false},{"pairId":"P0158","raterId":"E18","rateeId":"E16","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0159","raterId":"E18","rateeId":"E17","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0160","raterId":"E18","rateeId":"E19","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0161","raterId":"E18","rateeId":"E20","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0162","raterId":"E18","rateeId":"E07","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0163","raterId":"E18","rateeId":"E14","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0164","raterId":"E19","rateeId":"E19","rel":"ประเมินตนเอง","done":false},{"pairId":"P0165","raterId":"E19","rateeId":"E04","rel":"ผู้ใต้บังคับบัญชา","done":false},{"pairId":"P0166","raterId":"E19","rateeId":"E16","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0167","raterId":"E19","rateeId":"E17","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0168","raterId":"E19","rateeId":"E18","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0169","raterId":"E19","rateeId":"E20","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0170","raterId":"E19","rateeId":"E07","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0171","raterId":"E19","rateeId":"E14","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0172","raterId":"E20","rateeId":"E20","rel":"ประเมินตนเอง","done":false},{"pairId":"P0173","raterId":"E20","rateeId":"E04","rel":"ผู้ใต้บังคับบัญชา","done":false},{"pairId":"P0174","raterId":"E20","rateeId":"E16","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0175","raterId":"E20","rateeId":"E17","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0176","raterId":"E20","rateeId":"E18","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0177","raterId":"E20","rateeId":"E19","rel":"เพื่อนร่วมงาน","done":false},{"pairId":"P0178","raterId":"E20","rateeId":"E07","rel":"ผู้ร่วมงานต่างฝ่าย","done":false},{"pairId":"P0179","raterId":"E20","rateeId":"E15","rel":"ผู้ร่วมงานต่างฝ่าย","done":false}],"hr":{"ok":true,"org":"ร้านอาหารตัวอย่าง (ข้อมูลจำลอง)","cycle":"รอบที่ 1 (ธ.ค. 2026)","rules":{"minRaters":3,"minAnswered":15,"minGroups":2},"totals":{"pairs":179,"done":158,"subs":158},"categories":["ความรับผิดชอบในงาน","การสื่อสาร","การทำงานเป็นทีม","การเรียนรู้และพัฒนา"],"questions":[{"id":"Q01","category":"ความรับผิดชอบในงาน","text":"ตรงต่อเวลา"},{"id":"Q02","category":"ความรับผิดชอบในงาน","text":"ทำงานครบถ้วน"},{"id":"Q03","category":"ความรับผิดชอบในงาน","text":"ใส่ใจคุณภาพ"},{"id":"Q04","category":"ความรับผิดชอบในงาน","text":"ยอมรับความผิดพลาด"},{"id":"Q05","category":"ความรับผิดชอบในงาน","text":"ดูแลอุปกรณ์และพื้นที่"},{"id":"Q06","category":"การสื่อสาร","text":"พูดให้เข้าใจง่าย"},{"id":"Q07","category":"การสื่อสาร","text":"ฟังอย่างตั้งใจ"},{"id":"Q08","category":"การสื่อสาร","text":"ส่งต่องานเรียบร้อย"},{"id":"Q09","category":"การสื่อสาร","text":"แจ้งเรื่องเร็ว"},{"id":"Q10","category":"การสื่อสาร","text":"สุภาพ"},{"id":"Q11","category":"การทำงานเป็นทีม","text":"ช่วยเหลือเพื่อน"},{"id":"Q12","category":"การทำงานเป็นทีม","text":"แบ่งงานยุติธรรม"},{"id":"Q13","category":"การทำงานเป็นทีม","text":"เคารพความต่าง"},{"id":"Q14","category":"การทำงานเป็นทีม","text":"คุยกันเมื่อเห็นต่าง"},{"id":"Q15","category":"การทำงานเป็นทีม","text":"สร้างบรรยากาศดี"},{"id":"Q16","category":"การเรียนรู้และพัฒนา","text":"รับคำติชมได้"},{"id":"Q17","category":"การเรียนรู้และพัฒนา","text":"ปรับปรุงจริง"},{"id":"Q18","category":"การเรียนรู้และพัฒนา","text":"ปรับตัวเร็ว"},{"id":"Q19","category":"การเรียนรู้และพัฒนา","text":"สอนต่อได้"},{"id":"Q20","category":"การเรียนรู้และพัฒนา","text":"เสนอไอเดีย"}],"people":[{"id":"E01","name":"สมชาย ใจดี","nick":"พี่ชาย","position":"ผู้จัดการร้าน","team":"บริหาร","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2ZkZTY4YScvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjOTI0MDBlJy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyM5MjQwMGUnLz48L3N2Zz4=","score360":null,"self":68.2,"gap":null,"status":"ยังไม่มีข้อมูล","raterCount":2,"invalidCount":0,"hiddenRels":["ลูกน้อง"],"groups":[{"rel":"ประเมินตนเอง","label":"ตนเอง","n":1,"score":68.2,"cat":{"ความรับผิดชอบในงาน":60,"การสื่อสาร":64,"การทำงานเป็นทีม":76,"การเรียนรู้และพัฒนา":70},"q":{"Q01":60,"Q02":60,"Q03":null,"Q04":60,"Q05":null,"Q06":60,"Q07":60,"Q08":80,"Q09":60,"Q10":60,"Q11":80,"Q12":60,"Q13":80,"Q14":80,"Q15":80,"Q16":60,"Q17":60,"Q18":80,"Q19":null,"Q20":80}}],"cat360":{"ความรับผิดชอบในงาน":null,"การสื่อสาร":null,"การทำงานเป็นทีม":null,"การเรียนรู้และพัฒนา":null},"q360":{"Q01":null,"Q02":null,"Q03":null,"Q04":null,"Q05":null,"Q06":null,"Q07":null,"Q08":null,"Q09":null,"Q10":null,"Q11":null,"Q12":null,"Q13":null,"Q14":null,"Q15":null,"Q16":null,"Q17":null,"Q18":null,"Q19":null,"Q20":null},"strengths":[],"develop":[],"comments":[{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สอนน้องใหม่ด้วยความใจเย็น"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"บางครั้งพูดห้วนตอนร้านยุ่ง"}],"progress":{"assigned":4,"done":3,"received":3,"expected":4}},{"id":"E02","name":"วิภาวรรณ ศรีสุข","nick":"วิ","position":"หัวหน้ากะ (ฟลอร์)","team":"ฟลอร์","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2JmZGJmZScvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjMWUzYThhJy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyMxZTNhOGEnLz48L3N2Zz4=","score360":69.6,"self":83.2,"gap":-13.5,"status":"พร้อมใช้เพื่อพัฒนา","raterCount":9,"invalidCount":0,"hiddenRels":["เพื่อน","ต่างฝ่าย"],"groups":[{"rel":"ประเมินตนเอง","label":"ตนเอง","n":1,"score":83.2,"cat":{"ความรับผิดชอบในงาน":88,"การสื่อสาร":80,"การทำงานเป็นทีม":80,"การเรียนรู้และพัฒนา":84},"q":{"Q01":80,"Q02":100,"Q03":80,"Q04":80,"Q05":100,"Q06":80,"Q07":80,"Q08":null,"Q09":100,"Q10":60,"Q11":80,"Q12":60,"Q13":100,"Q14":80,"Q15":80,"Q16":100,"Q17":80,"Q18":80,"Q19":100,"Q20":60}},{"rel":"ผู้บังคับบัญชา","label":"หัวหน้า","n":1,"score":67,"cat":{"ความรับผิดชอบในงาน":68,"การสื่อสาร":60,"การทำงานเป็นทีม":76,"การเรียนรู้และพัฒนา":64},"q":{"Q01":60,"Q02":80,"Q03":80,"Q04":60,"Q05":60,"Q06":60,"Q07":60,"Q08":60,"Q09":60,"Q10":60,"Q11":80,"Q12":80,"Q13":80,"Q14":60,"Q15":80,"Q16":60,"Q17":60,"Q18":60,"Q19":60,"Q20":80}},{"rel":"ผู้ใต้บังคับบัญชา","label":"ลูกน้อง","n":5,"score":72.3,"cat":{"ความรับผิดชอบในงาน":73.6,"การสื่อสาร":73.2,"การทำงานเป็นทีม":72.8,"การเรียนรู้และพัฒนา":70.8},"q":{"Q01":76,"Q02":76,"Q03":70,"Q04":72,"Q05":70,"Q06":76,"Q07":70,"Q08":68,"Q09":70,"Q10":80,"Q11":80,"Q12":72,"Q13":72,"Q14":68,"Q15":72,"Q16":68,"Q17":72,"Q18":76,"Q19":72,"Q20":60}}],"cat360":{"ความรับผิดชอบในงาน":70.8,"การสื่อสาร":66.6,"การทำงานเป็นทีม":74.4,"การเรียนรู้และพัฒนา":67.4},"q360":{"Q01":68,"Q02":78,"Q03":75,"Q04":66,"Q05":65,"Q06":68,"Q07":65,"Q08":64,"Q09":65,"Q10":70,"Q11":80,"Q12":76,"Q13":76,"Q14":64,"Q15":76,"Q16":64,"Q17":66,"Q18":68,"Q19":66,"Q20":70},"strengths":[{"id":"Q11","text":"ช่วยเหลือเพื่อน","score":80},{"id":"Q02","text":"ทำงานครบถ้วน","score":78},{"id":"Q12","text":"แบ่งงานยุติธรรม","score":76}],"develop":[{"id":"Q16","text":"รับคำติชมได้","score":64},{"id":"Q14","text":"คุยกันเมื่อเห็นต่าง","score":64},{"id":"Q08","text":"ส่งต่องานเรียบร้อย","score":64}],"comments":[{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ตนเอง","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สอนน้องใหม่ด้วยความใจเย็น"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สุภาพกับลูกค้าและเพื่อนร่วมงาน"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"ใจเย็นเวลามีปัญหาหน้างาน"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"ใจเย็นเวลามีปัญหาหน้างาน"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรตรวจงานให้ละเอียดก่อนส่งต่อ"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรเปิดรับคำแนะนำมากขึ้น"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"บางครั้งพูดห้วนตอนร้านยุ่ง"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"บางครั้งพูดห้วนตอนร้านยุ่ง"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"อยากให้แจ้งปัญหาให้หัวหน้ารู้เร็วกว่านี้"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"}],"progress":{"assigned":13,"done":12,"received":10,"expected":11}},{"id":"E03","name":"ธนากร มีสุข","nick":"กร","position":"หัวหน้าโซนคาราโอเกะ","team":"คาราโอเกะ","photo":"","score360":67.7,"self":77,"gap":-9.3,"status":"พร้อมใช้เพื่อพัฒนา","raterCount":9,"invalidCount":0,"hiddenRels":["เพื่อน","ต่างฝ่าย"],"groups":[{"rel":"ประเมินตนเอง","label":"ตนเอง","n":1,"score":77,"cat":{"ความรับผิดชอบในงาน":76,"การสื่อสาร":76,"การทำงานเป็นทีม":76,"การเรียนรู้และพัฒนา":80},"q":{"Q01":80,"Q02":80,"Q03":80,"Q04":80,"Q05":60,"Q06":80,"Q07":80,"Q08":80,"Q09":60,"Q10":80,"Q11":80,"Q12":80,"Q13":60,"Q14":80,"Q15":80,"Q16":80,"Q17":80,"Q18":80,"Q19":80,"Q20":80}},{"rel":"ผู้บังคับบัญชา","label":"หัวหน้า","n":1,"score":66.3,"cat":{"ความรับผิดชอบในงาน":72,"การสื่อสาร":60,"การทำงานเป็นทีม":64,"การเรียนรู้และพัฒนา":68},"q":{"Q01":60,"Q02":60,"Q03":80,"Q04":80,"Q05":80,"Q06":null,"Q07":40,"Q08":60,"Q09":60,"Q10":80,"Q11":80,"Q12":60,"Q13":60,"Q14":60,"Q15":60,"Q16":60,"Q17":60,"Q18":80,"Q19":60,"Q20":80}},{"rel":"ผู้ใต้บังคับบัญชา","label":"ลูกน้อง","n":5,"score":69,"cat":{"ความรับผิดชอบในงาน":70.4,"การสื่อสาร":67.2,"การทำงานเป็นทีม":70.4,"การเรียนรู้และพัฒนา":68},"q":{"Q01":76,"Q02":68,"Q03":68,"Q04":64,"Q05":76,"Q06":68,"Q07":72,"Q08":64,"Q09":68,"Q10":64,"Q11":68,"Q12":75,"Q13":68,"Q14":72,"Q15":70,"Q16":64,"Q17":72,"Q18":64,"Q19":72,"Q20":68}}],"cat360":{"ความรับผิดชอบในงาน":71.2,"การสื่อสาร":63.6,"การทำงานเป็นทีม":67.2,"การเรียนรู้และพัฒนา":68},"q360":{"Q01":68,"Q02":64,"Q03":74,"Q04":72,"Q05":78,"Q06":68,"Q07":56,"Q08":62,"Q09":64,"Q10":72,"Q11":74,"Q12":67.5,"Q13":64,"Q14":66,"Q15":65,"Q16":62,"Q17":66,"Q18":72,"Q19":66,"Q20":74},"strengths":[{"id":"Q05","text":"ดูแลอุปกรณ์และพื้นที่","score":78},{"id":"Q03","text":"ใส่ใจคุณภาพ","score":74},{"id":"Q11","text":"ช่วยเหลือเพื่อน","score":74}],"develop":[{"id":"Q07","text":"ฟังอย่างตั้งใจ","score":56},{"id":"Q16","text":"รับคำติชมได้","score":62},{"id":"Q08","text":"ส่งต่องานเรียบร้อย","score":62}],"comments":[{"topic":"เรื่องที่ควรพัฒนา","source":"ตนเอง","text":"บางครั้งพูดห้วนตอนร้านยุ่ง"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ตนเอง","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"ช่วยเพื่อนตอนร้านยุ่งเสมอ"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"รับผิดชอบงานดี ไว้ใจได้"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"ใจเย็นเวลามีปัญหาหน้างาน"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรตรวจงานให้ละเอียดก่อนส่งต่อ"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรเปิดรับคำแนะนำมากขึ้น"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"บางครั้งพูดห้วนตอนร้านยุ่ง"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"อยากให้แจ้งปัญหาให้หัวหน้ารู้เร็วกว่านี้"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"}],"progress":{"assigned":12,"done":12,"received":10,"expected":11}},{"id":"E04","name":"ประเสริฐ ทองดี","nick":"เสริฐ","position":"หัวหน้าครัว","team":"ครัว","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2ZiY2ZlOCcvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjODMxODQzJy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyM4MzE4NDMnLz48L3N2Zz4=","score360":60.8,"self":64.2,"gap":-3.4,"status":"ยังไม่ครบ 2 มุมมอง","raterCount":9,"invalidCount":1,"hiddenRels":["เพื่อน","ต่างฝ่าย"],"groups":[{"rel":"ประเมินตนเอง","label":"ตนเอง","n":1,"score":64.2,"cat":{"ความรับผิดชอบในงาน":64,"การสื่อสาร":68,"การทำงานเป็นทีม":64,"การเรียนรู้และพัฒนา":60},"q":{"Q01":60,"Q02":60,"Q03":80,"Q04":60,"Q05":60,"Q06":60,"Q07":80,"Q08":60,"Q09":60,"Q10":80,"Q11":60,"Q12":60,"Q13":60,"Q14":60,"Q15":80,"Q16":60,"Q17":60,"Q18":60,"Q19":60,"Q20":null}},{"rel":"ผู้ใต้บังคับบัญชา","label":"ลูกน้อง","n":5,"score":60.8,"cat":{"ความรับผิดชอบในงาน":60,"การสื่อสาร":62.6,"การทำงานเป็นทีม":60.6,"การเรียนรู้และพัฒนา":60},"q":{"Q01":56,"Q02":60,"Q03":60,"Q04":64,"Q05":60,"Q06":60,"Q07":64,"Q08":60,"Q09":60,"Q10":68,"Q11":68,"Q12":56,"Q13":64,"Q14":65,"Q15":52,"Q16":60,"Q17":60,"Q18":52,"Q19":65,"Q20":64}}],"cat360":{"ความรับผิดชอบในงาน":60,"การสื่อสาร":62.6,"การทำงานเป็นทีม":60.6,"การเรียนรู้และพัฒนา":60},"q360":{"Q01":56,"Q02":60,"Q03":60,"Q04":64,"Q05":60,"Q06":60,"Q07":64,"Q08":60,"Q09":60,"Q10":68,"Q11":68,"Q12":56,"Q13":64,"Q14":65,"Q15":52,"Q16":60,"Q17":60,"Q18":52,"Q19":65,"Q20":64},"strengths":[{"id":"Q10","text":"สุภาพ","score":68},{"id":"Q11","text":"ช่วยเหลือเพื่อน","score":68},{"id":"Q14","text":"คุยกันเมื่อเห็นต่าง","score":65}],"develop":[{"id":"Q18","text":"ปรับตัวเร็ว","score":52},{"id":"Q15","text":"สร้างบรรยากาศดี","score":52},{"id":"Q12","text":"แบ่งงานยุติธรรม","score":56}],"comments":[{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สุภาพกับลูกค้าและเพื่อนร่วมงาน"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สุภาพกับลูกค้าและเพื่อนร่วมงาน"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรตรวจงานให้ละเอียดก่อนส่งต่อ"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรเปิดรับคำแนะนำมากขึ้น"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"บางครั้งพูดห้วนตอนร้านยุ่ง"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"}],"progress":{"assigned":11,"done":9,"received":11,"expected":12}},{"id":"E05","name":"กมลชนก แสงทอง","nick":"แนน","position":"พนักงานเสิร์ฟ","team":"ฟลอร์","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2RkZDZmZScvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjNGMxZDk1Jy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyM0YzFkOTUnLz48L3N2Zz4=","score360":83.8,"self":90,"gap":-6.2,"status":"พร้อมใช้เพื่อพัฒนา","raterCount":8,"invalidCount":0,"hiddenRels":[],"groups":[{"rel":"ประเมินตนเอง","label":"ตนเอง","n":1,"score":90,"cat":{"ความรับผิดชอบในงาน":84,"การสื่อสาร":92,"การทำงานเป็นทีม":88,"การเรียนรู้และพัฒนา":96},"q":{"Q01":80,"Q02":80,"Q03":100,"Q04":80,"Q05":80,"Q06":80,"Q07":100,"Q08":100,"Q09":100,"Q10":80,"Q11":80,"Q12":100,"Q13":80,"Q14":100,"Q15":80,"Q16":100,"Q17":100,"Q18":100,"Q19":100,"Q20":80}},{"rel":"ผู้บังคับบัญชา","label":"หัวหน้า","n":1,"score":82,"cat":{"ความรับผิดชอบในงาน":80,"การสื่อสาร":76,"การทำงานเป็นทีม":84,"การเรียนรู้และพัฒนา":88},"q":{"Q01":80,"Q02":100,"Q03":60,"Q04":80,"Q05":80,"Q06":60,"Q07":100,"Q08":80,"Q09":60,"Q10":80,"Q11":80,"Q12":80,"Q13":80,"Q14":100,"Q15":80,"Q16":100,"Q17":80,"Q18":100,"Q19":80,"Q20":80}},{"rel":"เพื่อนร่วมงาน","label":"เพื่อน","n":4,"score":85.3,"cat":{"ความรับผิดชอบในงาน":83,"การสื่อสาร":87,"การทำงานเป็นทีม":86.8,"การเรียนรู้และพัฒนา":84.5},"q":{"Q01":75,"Q02":80,"Q03":85,"Q04":90,"Q05":85,"Q06":95,"Q07":90,"Q08":80,"Q09":85,"Q10":85,"Q11":90,"Q12":86.7,"Q13":85,"Q14":85,"Q15":85,"Q16":86.7,"Q17":80,"Q18":90,"Q19":80,"Q20":90}},{"rel":"ผู้ร่วมงานต่างฝ่าย","label":"ต่างฝ่าย","n":3,"score":84,"cat":{"ความรับผิดชอบในงาน":82.7,"การสื่อสาร":84.7,"การทำงานเป็นทีม":85.7,"การเรียนรู้และพัฒนา":83.3},"q":{"Q01":86.7,"Q02":86.7,"Q03":80,"Q04":80,"Q05":80,"Q06":86.7,"Q07":86.7,"Q08":86.7,"Q09":73.3,"Q10":90,"Q11":80,"Q12":93.3,"Q13":93.3,"Q14":80,"Q15":80,"Q16":86.7,"Q17":80,"Q18":80,"Q19":80,"Q20":86.7}}],"cat360":{"ความรับผิดชอบในงาน":81.9,"การสื่อสาร":82.6,"การทำงานเป็นทีม":85.5,"การเรียนรู้และพัฒนา":85.3},"q360":{"Q01":80.6,"Q02":88.9,"Q03":75,"Q04":83.3,"Q05":81.7,"Q06":80.6,"Q07":92.2,"Q08":82.2,"Q09":72.8,"Q10":85,"Q11":83.3,"Q12":86.7,"Q13":86.1,"Q14":88.3,"Q15":81.7,"Q16":91.1,"Q17":80,"Q18":90,"Q19":80,"Q20":85.6},"strengths":[{"id":"Q07","text":"ฟังอย่างตั้งใจ","score":92.2},{"id":"Q16","text":"รับคำติชมได้","score":91.1},{"id":"Q18","text":"ปรับตัวเร็ว","score":90}],"develop":[{"id":"Q09","text":"แจ้งเรื่องเร็ว","score":72.8},{"id":"Q03","text":"ใส่ใจคุณภาพ","score":75},{"id":"Q19","text":"สอนต่อได้","score":80}],"comments":[{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"รับผิดชอบงานดี ไว้ใจได้"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สอนน้องใหม่ด้วยความใจเย็น"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สุภาพกับลูกค้าและเพื่อนร่วมงาน"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"ใจเย็นเวลามีปัญหาหน้างาน"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรตรวจงานให้ละเอียดก่อนส่งต่อ"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรเปิดรับคำแนะนำมากขึ้น"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรเปิดรับคำแนะนำมากขึ้น"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"บางครั้งพูดห้วนตอนร้านยุ่ง"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"}],"progress":{"assigned":9,"done":7,"received":9,"expected":9}},{"id":"E06","name":"ณัฐพล บุญมา","nick":"ต้น","position":"พนักงานเสิร์ฟ","team":"ฟลอร์","photo":"","score360":68,"self":80,"gap":-12,"status":"พร้อมใช้เพื่อพัฒนา","raterCount":8,"invalidCount":0,"hiddenRels":[],"groups":[{"rel":"ประเมินตนเอง","label":"ตนเอง","n":1,"score":80,"cat":{"ความรับผิดชอบในงาน":85,"การสื่อสาร":80,"การทำงานเป็นทีม":76,"การเรียนรู้และพัฒนา":80},"q":{"Q01":80,"Q02":80,"Q03":null,"Q04":100,"Q05":80,"Q06":80,"Q07":100,"Q08":80,"Q09":60,"Q10":80,"Q11":80,"Q12":80,"Q13":80,"Q14":60,"Q15":80,"Q16":null,"Q17":80,"Q18":80,"Q19":80,"Q20":80}},{"rel":"ผู้บังคับบัญชา","label":"หัวหน้า","n":1,"score":63,"cat":{"ความรับผิดชอบในงาน":64,"การสื่อสาร":64,"การทำงานเป็นทีม":64,"การเรียนรู้และพัฒนา":60},"q":{"Q01":80,"Q02":60,"Q03":60,"Q04":60,"Q05":60,"Q06":60,"Q07":80,"Q08":60,"Q09":60,"Q10":60,"Q11":60,"Q12":60,"Q13":80,"Q14":60,"Q15":60,"Q16":60,"Q17":60,"Q18":60,"Q19":60,"Q20":60}},{"rel":"เพื่อนร่วมงาน","label":"เพื่อน","n":4,"score":70.6,"cat":{"ความรับผิดชอบในงาน":70,"การสื่อสาร":71.3,"การทำงานเป็นทีม":72.7,"การเรียนรู้และพัฒนา":69},"q":{"Q01":70,"Q02":75,"Q03":70,"Q04":65,"Q05":70,"Q06":60,"Q07":70,"Q08":75,"Q09":70,"Q10":75,"Q11":75,"Q12":70,"Q13":75,"Q14":66.7,"Q15":80,"Q16":70,"Q17":65,"Q18":65,"Q19":70,"Q20":75}},{"rel":"ผู้ร่วมงานต่างฝ่าย","label":"ต่างฝ่าย","n":3,"score":70.3,"cat":{"ความรับผิดชอบในงาน":70.7,"การสื่อสาร":68.3,"การทำงานเป็นทีม":71.3,"การเรียนรู้และพัฒนา":70.4},"q":{"Q01":66.7,"Q02":66.7,"Q03":73.3,"Q04":66.7,"Q05":80,"Q06":70,"Q07":66.7,"Q08":73.3,"Q09":66.7,"Q10":60,"Q11":60,"Q12":80,"Q13":73.3,"Q14":73.3,"Q15":73.3,"Q16":66.7,"Q17":70,"Q18":70,"Q19":70,"Q20":73.3}}],"cat360":{"ความรับผิดชอบในงาน":68.2,"การสื่อสาร":67.9,"การทำงานเป็นทีม":69.3,"การเรียนรู้และพัฒนา":66.5},"q360":{"Q01":72.2,"Q02":67.2,"Q03":67.8,"Q04":63.9,"Q05":70,"Q06":63.3,"Q07":72.2,"Q08":69.4,"Q09":65.6,"Q10":65,"Q11":65,"Q12":70,"Q13":76.1,"Q14":66.7,"Q15":71.1,"Q16":65.6,"Q17":65,"Q18":65,"Q19":66.7,"Q20":69.4},"strengths":[{"id":"Q13","text":"เคารพความต่าง","score":76.1},{"id":"Q01","text":"ตรงต่อเวลา","score":72.2},{"id":"Q07","text":"ฟังอย่างตั้งใจ","score":72.2}],"develop":[{"id":"Q06","text":"พูดให้เข้าใจง่าย","score":63.3},{"id":"Q04","text":"ยอมรับความผิดพลาด","score":63.9},{"id":"Q18","text":"ปรับตัวเร็ว","score":65}],"comments":[{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ตนเอง","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"ช่วยเพื่อนตอนร้านยุ่งเสมอ"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"ช่วยเพื่อนตอนร้านยุ่งเสมอ"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"รับผิดชอบงานดี ไว้ใจได้"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"รับผิดชอบงานดี ไว้ใจได้"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สุภาพกับลูกค้าและเพื่อนร่วมงาน"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรเปิดรับคำแนะนำมากขึ้น"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"}],"progress":{"assigned":9,"done":7,"received":9,"expected":9}},{"id":"E07","name":"สุดารัตน์ คำแก้ว","nick":"ดา","position":"พนักงานเสิร์ฟ","team":"ฟลอร์","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2ZkZTY4YScvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjOTI0MDBlJy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyM5MjQwMGUnLz48L3N2Zz4=","score360":72.9,"self":null,"gap":null,"status":"พร้อมใช้เพื่อพัฒนา","raterCount":8,"invalidCount":0,"hiddenRels":[],"groups":[{"rel":"ผู้บังคับบัญชา","label":"หัวหน้า","n":1,"score":71.6,"cat":{"ความรับผิดชอบในงาน":72,"การสื่อสาร":72,"การทำงานเป็นทีม":76,"การเรียนรู้และพัฒนา":65},"q":{"Q01":80,"Q02":60,"Q03":80,"Q04":60,"Q05":80,"Q06":60,"Q07":60,"Q08":80,"Q09":80,"Q10":80,"Q11":80,"Q12":60,"Q13":80,"Q14":80,"Q15":80,"Q16":60,"Q17":60,"Q18":80,"Q19":null,"Q20":60}},{"rel":"เพื่อนร่วมงาน","label":"เพื่อน","n":4,"score":72.2,"cat":{"ความรับผิดชอบในงาน":71.8,"การสื่อสาร":71,"การทำงานเป็นทีม":74.5,"การเรียนรู้และพัฒนา":71},"q":{"Q01":80,"Q02":73.3,"Q03":70,"Q04":70,"Q05":75,"Q06":75,"Q07":75,"Q08":65,"Q09":65,"Q10":75,"Q11":70,"Q12":80,"Q13":70,"Q14":80,"Q15":73.3,"Q16":70,"Q17":73.3,"Q18":60,"Q19":70,"Q20":80}},{"rel":"ผู้ร่วมงานต่างฝ่าย","label":"ต่างฝ่าย","n":3,"score":74.7,"cat":{"ความรับผิดชอบในงาน":77,"การสื่อสาร":74.7,"การทำงานเป็นทีม":73.3,"การเรียนรู้และพัฒนา":73.7},"q":{"Q01":80,"Q02":80,"Q03":70,"Q04":73.3,"Q05":80,"Q06":73.3,"Q07":80,"Q08":80,"Q09":66.7,"Q10":73.3,"Q11":73.3,"Q12":80,"Q13":73.3,"Q14":73.3,"Q15":66.7,"Q16":66.7,"Q17":73.3,"Q18":73.3,"Q19":80,"Q20":80}}],"cat360":{"ความรับผิดชอบในงาน":73.6,"การสื่อสาร":72.6,"การทำงานเป็นทีม":74.6,"การเรียนรู้และพัฒนา":69.9},"q360":{"Q01":80,"Q02":71.1,"Q03":73.3,"Q04":67.8,"Q05":78.3,"Q06":69.4,"Q07":71.7,"Q08":75,"Q09":70.6,"Q10":76.1,"Q11":74.4,"Q12":73.3,"Q13":74.4,"Q14":77.8,"Q15":73.3,"Q16":65.6,"Q17":68.9,"Q18":71.1,"Q19":75,"Q20":73.3},"strengths":[{"id":"Q01","text":"ตรงต่อเวลา","score":80},{"id":"Q05","text":"ดูแลอุปกรณ์และพื้นที่","score":78.3},{"id":"Q14","text":"คุยกันเมื่อเห็นต่าง","score":77.8}],"develop":[{"id":"Q16","text":"รับคำติชมได้","score":65.6},{"id":"Q04","text":"ยอมรับความผิดพลาด","score":67.8},{"id":"Q17","text":"ปรับปรุงจริง","score":68.9}],"comments":[{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สอนน้องใหม่ด้วยความใจเย็น"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สุภาพกับลูกค้าและเพื่อนร่วมงาน"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรเปิดรับคำแนะนำมากขึ้น"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"}],"progress":{"assigned":9,"done":6,"received":8,"expected":9}},{"id":"E08","name":"อนุชา พรหมมา","nick":"นุ","position":"พนักงานเสิร์ฟ","team":"ฟลอร์","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2JmZGJmZScvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjMWUzYThhJy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyMxZTNhOGEnLz48L3N2Zz4=","score360":70.1,"self":82.1,"gap":-12,"status":"พร้อมใช้เพื่อพัฒนา","raterCount":6,"invalidCount":0,"hiddenRels":["ต่างฝ่าย"],"groups":[{"rel":"ประเมินตนเอง","label":"ตนเอง","n":1,"score":82.1,"cat":{"ความรับผิดชอบในงาน":85,"การสื่อสาร":80,"การทำงานเป็นทีม":80,"การเรียนรู้และพัฒนา":84},"q":{"Q01":100,"Q02":80,"Q03":null,"Q04":80,"Q05":80,"Q06":80,"Q07":80,"Q08":60,"Q09":100,"Q10":80,"Q11":60,"Q12":80,"Q13":60,"Q14":100,"Q15":100,"Q16":100,"Q17":80,"Q18":80,"Q19":80,"Q20":80}},{"rel":"ผู้บังคับบัญชา","label":"หัวหน้า","n":1,"score":68,"cat":{"ความรับผิดชอบในงาน":68,"การสื่อสาร":64,"การทำงานเป็นทีม":72,"การเรียนรู้และพัฒนา":68},"q":{"Q01":60,"Q02":80,"Q03":60,"Q04":80,"Q05":60,"Q06":60,"Q07":80,"Q08":60,"Q09":60,"Q10":60,"Q11":60,"Q12":60,"Q13":80,"Q14":80,"Q15":80,"Q16":60,"Q17":80,"Q18":80,"Q19":60,"Q20":60}},{"rel":"เพื่อนร่วมงาน","label":"เพื่อน","n":4,"score":72.2,"cat":{"ความรับผิดชอบในงาน":73,"การสื่อสาร":71.3,"การทำงานเป็นทีม":71.5,"การเรียนรู้และพัฒนา":73},"q":{"Q01":70,"Q02":80,"Q03":65,"Q04":80,"Q05":70,"Q06":80,"Q07":70,"Q08":70,"Q09":70,"Q10":70,"Q11":70,"Q12":60,"Q13":75,"Q14":70,"Q15":75,"Q16":80,"Q17":65,"Q18":70,"Q19":75,"Q20":75}}],"cat360":{"ความรับผิดชอบในงาน":70.5,"การสื่อสาร":67.6,"การทำงานเป็นทีม":71.8,"การเรียนรู้และพัฒนา":70.5},"q360":{"Q01":65,"Q02":80,"Q03":62.5,"Q04":80,"Q05":65,"Q06":70,"Q07":75,"Q08":65,"Q09":65,"Q10":65,"Q11":65,"Q12":60,"Q13":77.5,"Q14":75,"Q15":77.5,"Q16":70,"Q17":72.5,"Q18":75,"Q19":67.5,"Q20":67.5},"strengths":[{"id":"Q02","text":"ทำงานครบถ้วน","score":80},{"id":"Q04","text":"ยอมรับความผิดพลาด","score":80},{"id":"Q13","text":"เคารพความต่าง","score":77.5}],"develop":[{"id":"Q12","text":"แบ่งงานยุติธรรม","score":60},{"id":"Q03","text":"ใส่ใจคุณภาพ","score":62.5},{"id":"Q11","text":"ช่วยเหลือเพื่อน","score":65}],"comments":[{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สุภาพกับลูกค้าและเพื่อนร่วมงาน"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรเปิดรับคำแนะนำมากขึ้น"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรเปิดรับคำแนะนำมากขึ้น"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรเปิดรับคำแนะนำมากขึ้น"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"บางครั้งพูดห้วนตอนร้านยุ่ง"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"อยากให้แจ้งปัญหาให้หัวหน้ารู้เร็วกว่านี้"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"}],"progress":{"assigned":9,"done":9,"received":7,"expected":8}},{"id":"E09","name":"ปิยะนุช วงศ์ใหญ่","nick":"ปุ้ย","position":"แคชเชียร์","team":"ฟลอร์","photo":"","score360":71.3,"self":84,"gap":-12.7,"status":"พร้อมใช้เพื่อพัฒนา","raterCount":6,"invalidCount":0,"hiddenRels":["ต่างฝ่าย"],"groups":[{"rel":"ประเมินตนเอง","label":"ตนเอง","n":1,"score":84,"cat":{"ความรับผิดชอบในงาน":80,"การสื่อสาร":88,"การทำงานเป็นทีม":84,"การเรียนรู้และพัฒนา":84},"q":{"Q01":80,"Q02":80,"Q03":80,"Q04":80,"Q05":80,"Q06":80,"Q07":80,"Q08":80,"Q09":100,"Q10":100,"Q11":80,"Q12":80,"Q13":80,"Q14":100,"Q15":80,"Q16":80,"Q17":100,"Q18":80,"Q19":80,"Q20":80}},{"rel":"ผู้บังคับบัญชา","label":"หัวหน้า","n":1,"score":69,"cat":{"ความรับผิดชอบในงาน":72,"การสื่อสาร":68,"การทำงานเป็นทีม":72,"การเรียนรู้และพัฒนา":64},"q":{"Q01":80,"Q02":80,"Q03":60,"Q04":80,"Q05":60,"Q06":80,"Q07":60,"Q08":60,"Q09":60,"Q10":80,"Q11":80,"Q12":60,"Q13":80,"Q14":60,"Q15":80,"Q16":60,"Q17":60,"Q18":80,"Q19":60,"Q20":60}},{"rel":"เพื่อนร่วมงาน","label":"เพื่อน","n":3,"score":73.6,"cat":{"ความรับผิดชอบในงาน":74.7,"การสื่อสาร":73.3,"การทำงานเป็นทีม":74.7,"การเรียนรู้และพัฒนา":72},"q":{"Q01":73.3,"Q02":80,"Q03":66.7,"Q04":80,"Q05":73.3,"Q06":73.3,"Q07":73.3,"Q08":66.7,"Q09":80,"Q10":73.3,"Q11":73.3,"Q12":80,"Q13":80,"Q14":73.3,"Q15":66.7,"Q16":73.3,"Q17":80,"Q18":66.7,"Q19":66.7,"Q20":73.3}}],"cat360":{"ความรับผิดชอบในงาน":73.3,"การสื่อสาร":70.7,"การทำงานเป็นทีม":73.3,"การเรียนรู้และพัฒนา":68},"q360":{"Q01":76.7,"Q02":80,"Q03":63.3,"Q04":80,"Q05":66.7,"Q06":76.7,"Q07":66.7,"Q08":63.3,"Q09":70,"Q10":76.7,"Q11":76.7,"Q12":70,"Q13":80,"Q14":66.7,"Q15":73.3,"Q16":66.7,"Q17":70,"Q18":73.3,"Q19":63.3,"Q20":66.7},"strengths":[{"id":"Q02","text":"ทำงานครบถ้วน","score":80},{"id":"Q04","text":"ยอมรับความผิดพลาด","score":80},{"id":"Q13","text":"เคารพความต่าง","score":80}],"develop":[{"id":"Q19","text":"สอนต่อได้","score":63.3},{"id":"Q08","text":"ส่งต่องานเรียบร้อย","score":63.3},{"id":"Q03","text":"ใส่ใจคุณภาพ","score":63.3}],"comments":[{"topic":"เรื่องที่ควรพัฒนา","source":"ตนเอง","text":"ควรตรวจงานให้ละเอียดก่อนส่งต่อ"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ตนเอง","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สอนน้องใหม่ด้วยความใจเย็น"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สอนน้องใหม่ด้วยความใจเย็น"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรตรวจงานให้ละเอียดก่อนส่งต่อ"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรเปิดรับคำแนะนำมากขึ้น"}],"progress":{"assigned":9,"done":8,"received":7,"expected":9}},{"id":"E10","name":"ชัยวัฒน์ สายบุญ","nick":"ชัย","position":"บาร์เทนเดอร์","team":"ฟลอร์","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2ZiY2ZlOCcvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjODMxODQzJy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyM4MzE4NDMnLz48L3N2Zz4=","score360":65,"self":78,"gap":-13,"status":"พร้อมใช้เพื่อพัฒนา","raterCount":7,"invalidCount":0,"hiddenRels":[],"groups":[{"rel":"ประเมินตนเอง","label":"ตนเอง","n":1,"score":78,"cat":{"ความรับผิดชอบในงาน":76,"การสื่อสาร":72,"การทำงานเป็นทีม":84,"การเรียนรู้และพัฒนา":80},"q":{"Q01":80,"Q02":80,"Q03":60,"Q04":60,"Q05":100,"Q06":80,"Q07":80,"Q08":60,"Q09":60,"Q10":80,"Q11":60,"Q12":80,"Q13":100,"Q14":80,"Q15":100,"Q16":80,"Q17":80,"Q18":80,"Q19":80,"Q20":80}},{"rel":"ผู้บังคับบัญชา","label":"หัวหน้า","n":1,"score":62.1,"cat":{"ความรับผิดชอบในงาน":56,"การสื่อสาร":64,"การทำงานเป็นทีม":64,"การเรียนรู้และพัฒนา":65},"q":{"Q01":40,"Q02":60,"Q03":60,"Q04":60,"Q05":60,"Q06":60,"Q07":80,"Q08":60,"Q09":60,"Q10":60,"Q11":60,"Q12":60,"Q13":80,"Q14":60,"Q15":60,"Q16":60,"Q17":60,"Q18":60,"Q19":80,"Q20":null}},{"rel":"เพื่อนร่วมงาน","label":"เพื่อน","n":3,"score":64.7,"cat":{"ความรับผิดชอบในงาน":62.7,"การสื่อสาร":61.7,"การทำงานเป็นทีม":67.7,"การเรียนรู้และพัฒนา":66.7},"q":{"Q01":66.7,"Q02":60,"Q03":60,"Q04":66.7,"Q05":60,"Q06":60,"Q07":60,"Q08":60,"Q09":60,"Q10":66.7,"Q11":60,"Q12":66.7,"Q13":60,"Q14":73.3,"Q15":73.3,"Q16":66.7,"Q17":60,"Q18":73.3,"Q19":66.7,"Q20":66.7}},{"rel":"ผู้ร่วมงานต่างฝ่าย","label":"ต่างฝ่าย","n":3,"score":68.4,"cat":{"ความรับผิดชอบในงาน":69.4,"การสื่อสาร":65.7,"การทำงานเป็นทีม":71,"การเรียนรู้และพัฒนา":70.4},"q":{"Q01":70,"Q02":70,"Q03":70,"Q04":60,"Q05":73.3,"Q06":60,"Q07":80,"Q08":70,"Q09":60,"Q10":60,"Q11":73.3,"Q12":70,"Q13":66.7,"Q14":60,"Q15":73.3,"Q16":66.7,"Q17":66.7,"Q18":70,"Q19":80,"Q20":70}}],"cat360":{"ความรับผิดชอบในงาน":62.7,"การสื่อสาร":63.8,"การทำงานเป็นทีม":67.6,"การเรียนรู้และพัฒนา":67.4},"q360":{"Q01":58.9,"Q02":63.3,"Q03":63.3,"Q04":62.2,"Q05":64.4,"Q06":60,"Q07":73.3,"Q08":63.3,"Q09":60,"Q10":62.2,"Q11":64.4,"Q12":65.6,"Q13":68.9,"Q14":64.4,"Q15":68.9,"Q16":64.4,"Q17":62.2,"Q18":67.8,"Q19":75.6,"Q20":68.3},"strengths":[{"id":"Q19","text":"สอนต่อได้","score":75.6},{"id":"Q07","text":"ฟังอย่างตั้งใจ","score":73.3},{"id":"Q13","text":"เคารพความต่าง","score":68.9}],"develop":[{"id":"Q01","text":"ตรงต่อเวลา","score":58.9},{"id":"Q09","text":"แจ้งเรื่องเร็ว","score":60},{"id":"Q06","text":"พูดให้เข้าใจง่าย","score":60}],"comments":[{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"ช่วยเพื่อนตอนร้านยุ่งเสมอ"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรตรวจงานให้ละเอียดก่อนส่งต่อ"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"}],"progress":{"assigned":9,"done":8,"received":8,"expected":9}},{"id":"E11","name":"รัตนา จันทร์เพ็ญ","nick":"นา","position":"พนักงานดูแลห้องคาราโอเกะ","team":"คาราโอเกะ","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2RkZDZmZScvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjNGMxZDk1Jy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyM0YzFkOTUnLz48L3N2Zz4=","score360":62.5,"self":70.5,"gap":-8,"status":"พร้อมใช้เพื่อพัฒนา","raterCount":6,"invalidCount":0,"hiddenRels":["ต่างฝ่าย"],"groups":[{"rel":"ประเมินตนเอง","label":"ตนเอง","n":1,"score":70.5,"cat":{"ความรับผิดชอบในงาน":68,"การสื่อสาร":72,"การทำงานเป็นทีม":72,"การเรียนรู้และพัฒนา":70},"q":{"Q01":80,"Q02":80,"Q03":60,"Q04":60,"Q05":60,"Q06":60,"Q07":60,"Q08":80,"Q09":80,"Q10":80,"Q11":80,"Q12":60,"Q13":60,"Q14":80,"Q15":80,"Q16":80,"Q17":80,"Q18":60,"Q19":null,"Q20":60}},{"rel":"ผู้บังคับบัญชา","label":"หัวหน้า","n":1,"score":60,"cat":{"ความรับผิดชอบในงาน":56,"การสื่อสาร":60,"การทำงานเป็นทีม":64,"การเรียนรู้และพัฒนา":60},"q":{"Q01":60,"Q02":40,"Q03":60,"Q04":60,"Q05":60,"Q06":60,"Q07":40,"Q08":null,"Q09":80,"Q10":60,"Q11":60,"Q12":60,"Q13":60,"Q14":60,"Q15":80,"Q16":60,"Q17":60,"Q18":60,"Q19":60,"Q20":60}},{"rel":"เพื่อนร่วมงาน","label":"เพื่อน","n":3,"score":65.1,"cat":{"ความรับผิดชอบในงาน":66.7,"การสื่อสาร":63,"การทำงานเป็นทีม":65.3,"การเรียนรู้และพัฒนา":65.3},"q":{"Q01":66.7,"Q02":66.7,"Q03":66.7,"Q04":66.7,"Q05":66.7,"Q06":70,"Q07":53.3,"Q08":66.7,"Q09":60,"Q10":66.7,"Q11":66.7,"Q12":60,"Q13":66.7,"Q14":66.7,"Q15":66.7,"Q16":60,"Q17":73.3,"Q18":53.3,"Q19":73.3,"Q20":66.7}}],"cat360":{"ความรับผิดชอบในงาน":61.3,"การสื่อสาร":61.5,"การทำงานเป็นทีม":64.7,"การเรียนรู้และพัฒนา":62.7},"q360":{"Q01":63.3,"Q02":53.3,"Q03":63.3,"Q04":63.3,"Q05":63.3,"Q06":65,"Q07":46.7,"Q08":66.7,"Q09":70,"Q10":63.3,"Q11":63.3,"Q12":60,"Q13":63.3,"Q14":63.3,"Q15":73.3,"Q16":60,"Q17":66.7,"Q18":56.7,"Q19":66.7,"Q20":63.3},"strengths":[{"id":"Q15","text":"สร้างบรรยากาศดี","score":73.3},{"id":"Q09","text":"แจ้งเรื่องเร็ว","score":70},{"id":"Q08","text":"ส่งต่องานเรียบร้อย","score":66.7}],"develop":[{"id":"Q07","text":"ฟังอย่างตั้งใจ","score":46.7},{"id":"Q02","text":"ทำงานครบถ้วน","score":53.3},{"id":"Q18","text":"ปรับตัวเร็ว","score":56.7}],"comments":[{"topic":"จุดเด่นที่สังเกตได้","source":"ตนเอง","text":"สุภาพกับลูกค้าและเพื่อนร่วมงาน"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ตนเอง","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"ช่วยเพื่อนตอนร้านยุ่งเสมอ"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สอนน้องใหม่ด้วยความใจเย็น"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"บางครั้งพูดห้วนตอนร้านยุ่ง"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"}],"progress":{"assigned":9,"done":9,"received":7,"expected":9}},{"id":"E12","name":"ศุภชัย แก้วมณี","nick":"บิ๊ก","position":"พนักงานดูแลห้องคาราโอเกะ","team":"คาราโอเกะ","photo":"","score360":75.6,"self":93.3,"gap":-17.7,"status":"พร้อมใช้เพื่อพัฒนา","raterCount":8,"invalidCount":0,"hiddenRels":[],"groups":[{"rel":"ประเมินตนเอง","label":"ตนเอง","n":1,"score":93.3,"cat":{"ความรับผิดชอบในงาน":86.7,"การสื่อสาร":92,"การทำงานเป็นทีม":96,"การเรียนรู้และพัฒนา":96},"q":{"Q01":null,"Q02":80,"Q03":100,"Q04":80,"Q05":null,"Q06":80,"Q07":100,"Q08":80,"Q09":100,"Q10":100,"Q11":100,"Q12":80,"Q13":100,"Q14":100,"Q15":100,"Q16":100,"Q17":80,"Q18":100,"Q19":100,"Q20":100}},{"rel":"ผู้บังคับบัญชา","label":"หัวหน้า","n":1,"score":69,"cat":{"ความรับผิดชอบในงาน":68,"การสื่อสาร":64,"การทำงานเป็นทีม":68,"การเรียนรู้และพัฒนา":76},"q":{"Q01":60,"Q02":60,"Q03":80,"Q04":80,"Q05":60,"Q06":60,"Q07":80,"Q08":60,"Q09":60,"Q10":60,"Q11":60,"Q12":80,"Q13":60,"Q14":80,"Q15":60,"Q16":80,"Q17":80,"Q18":80,"Q19":80,"Q20":60}},{"rel":"เพื่อนร่วมงาน","label":"เพื่อน","n":4,"score":80.5,"cat":{"ความรับผิดชอบในงาน":79.8,"การสื่อสาร":81,"การทำงานเป็นทีม":81,"การเรียนรู้และพัฒนา":80.3},"q":{"Q01":75,"Q02":73.3,"Q03":85,"Q04":80,"Q05":85,"Q06":80,"Q07":75,"Q08":80,"Q09":85,"Q10":85,"Q11":95,"Q12":75,"Q13":80,"Q14":85,"Q15":70,"Q16":80,"Q17":85,"Q18":75,"Q19":86.7,"Q20":75}},{"rel":"ผู้ร่วมงานต่างฝ่าย","label":"ต่างฝ่าย","n":3,"score":77.3,"cat":{"ความรับผิดชอบในงาน":76.4,"การสื่อสาร":72.6,"การทำงานเป็นทีม":80.7,"การเรียนรู้และพัฒนา":78},"q":{"Q01":80,"Q02":80,"Q03":80,"Q04":80,"Q05":66.7,"Q06":80,"Q07":70,"Q08":70,"Q09":60,"Q10":80,"Q11":80,"Q12":80,"Q13":80,"Q14":73.3,"Q15":90,"Q16":80,"Q17":80,"Q18":90,"Q19":70,"Q20":73.3}}],"cat360":{"ความรับผิดชอบในงาน":74.7,"การสื่อสาร":72.5,"การทำงานเป็นทีม":76.6,"การเรียนรู้และพัฒนา":78.1},"q360":{"Q01":71.7,"Q02":71.1,"Q03":81.7,"Q04":80,"Q05":70.6,"Q06":73.3,"Q07":75,"Q08":70,"Q09":68.3,"Q10":75,"Q11":78.3,"Q12":78.3,"Q13":73.3,"Q14":79.4,"Q15":73.3,"Q16":80,"Q17":81.7,"Q18":81.7,"Q19":78.9,"Q20":69.4},"strengths":[{"id":"Q03","text":"ใส่ใจคุณภาพ","score":81.7},{"id":"Q17","text":"ปรับปรุงจริง","score":81.7},{"id":"Q18","text":"ปรับตัวเร็ว","score":81.7}],"develop":[{"id":"Q09","text":"แจ้งเรื่องเร็ว","score":68.3},{"id":"Q20","text":"เสนอไอเดีย","score":69.4},{"id":"Q08","text":"ส่งต่องานเรียบร้อย","score":70}],"comments":[{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"ช่วยเพื่อนตอนร้านยุ่งเสมอ"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"รับผิดชอบงานดี ไว้ใจได้"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สอนน้องใหม่ด้วยความใจเย็น"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรตรวจงานให้ละเอียดก่อนส่งต่อ"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"อยากให้แจ้งปัญหาให้หัวหน้ารู้เร็วกว่านี้"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"}],"progress":{"assigned":9,"done":7,"received":9,"expected":9}},{"id":"E13","name":"มาลัย ดวงดี","nick":"ลัย","position":"พนักงานดูแลห้องคาราโอเกะ","team":"คาราโอเกะ","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2ZkZTY4YScvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjOTI0MDBlJy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyM5MjQwMGUnLz48L3N2Zz4=","score360":59.1,"self":72.6,"gap":-13.5,"status":"พร้อมใช้เพื่อพัฒนา","raterCount":7,"invalidCount":0,"hiddenRels":["ต่างฝ่าย"],"groups":[{"rel":"ประเมินตนเอง","label":"ตนเอง","n":1,"score":72.6,"cat":{"ความรับผิดชอบในงาน":65,"การสื่อสาร":72,"การทำงานเป็นทีม":80,"การเรียนรู้และพัฒนา":72},"q":{"Q01":60,"Q02":60,"Q03":60,"Q04":80,"Q05":null,"Q06":80,"Q07":80,"Q08":60,"Q09":60,"Q10":80,"Q11":80,"Q12":80,"Q13":80,"Q14":80,"Q15":80,"Q16":60,"Q17":80,"Q18":60,"Q19":80,"Q20":80}},{"rel":"ผู้บังคับบัญชา","label":"หัวหน้า","n":1,"score":55,"cat":{"ความรับผิดชอบในงาน":60,"การสื่อสาร":56,"การทำงานเป็นทีม":56,"การเรียนรู้และพัฒนา":48},"q":{"Q01":60,"Q02":60,"Q03":60,"Q04":60,"Q05":60,"Q06":40,"Q07":80,"Q08":60,"Q09":60,"Q10":40,"Q11":40,"Q12":60,"Q13":80,"Q14":40,"Q15":60,"Q16":40,"Q17":60,"Q18":40,"Q19":40,"Q20":60}},{"rel":"เพื่อนร่วมงาน","label":"เพื่อน","n":4,"score":63.2,"cat":{"ความรับผิดชอบในงาน":66.8,"การสื่อสาร":64.7,"การทำงานเป็นทีม":59,"การเรียนรู้และพัฒนา":63},"q":{"Q01":73.3,"Q02":65,"Q03":60,"Q04":70,"Q05":65,"Q06":53.3,"Q07":70,"Q08":65,"Q09":66.7,"Q10":70,"Q11":60,"Q12":50,"Q13":65,"Q14":60,"Q15":60,"Q16":60,"Q17":65,"Q18":60,"Q19":70,"Q20":60}}],"cat360":{"ความรับผิดชอบในงาน":63.4,"การสื่อสาร":60.3,"การทำงานเป็นทีม":57.5,"การเรียนรู้และพัฒนา":55.5},"q360":{"Q01":66.7,"Q02":62.5,"Q03":60,"Q04":65,"Q05":62.5,"Q06":46.7,"Q07":75,"Q08":62.5,"Q09":63.3,"Q10":55,"Q11":50,"Q12":55,"Q13":72.5,"Q14":50,"Q15":60,"Q16":50,"Q17":62.5,"Q18":50,"Q19":55,"Q20":60},"strengths":[{"id":"Q07","text":"ฟังอย่างตั้งใจ","score":75},{"id":"Q13","text":"เคารพความต่าง","score":72.5},{"id":"Q01","text":"ตรงต่อเวลา","score":66.7}],"develop":[{"id":"Q06","text":"พูดให้เข้าใจง่าย","score":46.7},{"id":"Q18","text":"ปรับตัวเร็ว","score":50},{"id":"Q16","text":"รับคำติชมได้","score":50}],"comments":[{"topic":"เรื่องที่ควรพัฒนา","source":"ตนเอง","text":"ควรเปิดรับคำแนะนำมากขึ้น"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ตนเอง","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"ช่วยเพื่อนตอนร้านยุ่งเสมอ"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"รับผิดชอบงานดี ไว้ใจได้"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"ใจเย็นเวลามีปัญหาหน้างาน"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรเปิดรับคำแนะนำมากขึ้น"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"อยากให้แจ้งปัญหาให้หัวหน้ารู้เร็วกว่านี้"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"}],"progress":{"assigned":9,"done":8,"received":8,"expected":8}},{"id":"E14","name":"ภานุวัฒน์ ใจงาม","nick":"ภู","position":"บาร์เทนเดอร์ (คาราโอเกะ)","team":"คาราโอเกะ","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2JmZGJmZScvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjMWUzYThhJy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyMxZTNhOGEnLz48L3N2Zz4=","score360":70.6,"self":73,"gap":-2.4,"status":"พร้อมใช้เพื่อพัฒนา","raterCount":6,"invalidCount":0,"hiddenRels":["เพื่อน"],"groups":[{"rel":"ประเมินตนเอง","label":"ตนเอง","n":1,"score":73,"cat":{"ความรับผิดชอบในงาน":76,"การสื่อสาร":76,"การทำงานเป็นทีม":72,"การเรียนรู้และพัฒนา":68},"q":{"Q01":80,"Q02":80,"Q03":80,"Q04":80,"Q05":60,"Q06":80,"Q07":80,"Q08":80,"Q09":80,"Q10":60,"Q11":80,"Q12":60,"Q13":60,"Q14":60,"Q15":100,"Q16":60,"Q17":60,"Q18":80,"Q19":60,"Q20":80}},{"rel":"ผู้บังคับบัญชา","label":"หัวหน้า","n":1,"score":71,"cat":{"ความรับผิดชอบในงาน":72,"การสื่อสาร":72,"การทำงานเป็นทีม":72,"การเรียนรู้และพัฒนา":68},"q":{"Q01":80,"Q02":80,"Q03":80,"Q04":60,"Q05":60,"Q06":60,"Q07":80,"Q08":60,"Q09":80,"Q10":80,"Q11":80,"Q12":60,"Q13":80,"Q14":60,"Q15":80,"Q16":60,"Q17":80,"Q18":60,"Q19":60,"Q20":80}},{"rel":"ผู้ร่วมงานต่างฝ่าย","label":"ต่างฝ่าย","n":3,"score":70.3,"cat":{"ความรับผิดชอบในงาน":70.7,"การสื่อสาร":66,"การทำงานเป็นทีม":72,"การเรียนรู้และพัฒนา":72.3},"q":{"Q01":80,"Q02":73.3,"Q03":66.7,"Q04":66.7,"Q05":70,"Q06":60,"Q07":73.3,"Q08":70,"Q09":66.7,"Q10":60,"Q11":60,"Q12":73.3,"Q13":66.7,"Q14":80,"Q15":73.3,"Q16":73.3,"Q17":66.7,"Q18":73.3,"Q19":70,"Q20":80}}],"cat360":{"ความรับผิดชอบในงาน":71.3,"การสื่อสาร":69,"การทำงานเป็นทีม":72,"การเรียนรู้และพัฒนา":70.2},"q360":{"Q01":80,"Q02":76.7,"Q03":73.3,"Q04":63.3,"Q05":65,"Q06":60,"Q07":76.7,"Q08":65,"Q09":73.3,"Q10":70,"Q11":70,"Q12":66.7,"Q13":73.3,"Q14":70,"Q15":76.7,"Q16":66.7,"Q17":73.3,"Q18":66.7,"Q19":65,"Q20":80},"strengths":[{"id":"Q01","text":"ตรงต่อเวลา","score":80},{"id":"Q20","text":"เสนอไอเดีย","score":80},{"id":"Q02","text":"ทำงานครบถ้วน","score":76.7}],"develop":[{"id":"Q06","text":"พูดให้เข้าใจง่าย","score":60},{"id":"Q04","text":"ยอมรับความผิดพลาด","score":63.3},{"id":"Q19","text":"สอนต่อได้","score":65}],"comments":[{"topic":"จุดเด่นที่สังเกตได้","source":"ตนเอง","text":"สอนน้องใหม่ด้วยความใจเย็น"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"ใจเย็นเวลามีปัญหาหน้างาน"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรเปิดรับคำแนะนำมากขึ้น"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"อยากให้แจ้งปัญหาให้หัวหน้ารู้เร็วกว่านี้"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"}],"progress":{"assigned":9,"done":9,"received":7,"expected":9}},{"id":"E15","name":"จิราพร สมบูรณ์","nick":"จิ๋ว","position":"แคชเชียร์ห้องจัดเลี้ยง","team":"คาราโอเกะ","photo":"","score360":74.6,"self":89.5,"gap":-14.8,"status":"พร้อมใช้เพื่อพัฒนา","raterCount":7,"invalidCount":0,"hiddenRels":["ต่างฝ่าย"],"groups":[{"rel":"ประเมินตนเอง","label":"ตนเอง","n":1,"score":89.5,"cat":{"ความรับผิดชอบในงาน":84,"การสื่อสาร":92,"การทำงานเป็นทีม":90,"การเรียนรู้และพัฒนา":92},"q":{"Q01":80,"Q02":80,"Q03":80,"Q04":80,"Q05":100,"Q06":100,"Q07":100,"Q08":80,"Q09":80,"Q10":100,"Q11":100,"Q12":100,"Q13":80,"Q14":null,"Q15":80,"Q16":80,"Q17":80,"Q18":100,"Q19":100,"Q20":100}},{"rel":"ผู้บังคับบัญชา","label":"หัวหน้า","n":1,"score":74.7,"cat":{"ความรับผิดชอบในงาน":80,"การสื่อสาร":72,"การทำงานเป็นทีม":75,"การเรียนรู้และพัฒนา":72},"q":{"Q01":80,"Q02":80,"Q03":80,"Q04":80,"Q05":80,"Q06":80,"Q07":60,"Q08":80,"Q09":60,"Q10":80,"Q11":80,"Q12":null,"Q13":80,"Q14":60,"Q15":80,"Q16":80,"Q17":80,"Q18":80,"Q19":60,"Q20":60}},{"rel":"เพื่อนร่วมงาน","label":"เพื่อน","n":4,"score":74.5,"cat":{"ความรับผิดชอบในงาน":75.8,"การสื่อสาร":73,"การทำงานเป็นทีม":73.5,"การเรียนรู้และพัฒนา":76},"q":{"Q01":85,"Q02":75,"Q03":70,"Q04":73.3,"Q05":75,"Q06":70,"Q07":75,"Q08":75,"Q09":70,"Q10":75,"Q11":70,"Q12":75,"Q13":66.7,"Q14":80,"Q15":75,"Q16":75,"Q17":70,"Q18":80,"Q19":75,"Q20":80}}],"cat360":{"ความรับผิดชอบในงาน":77.9,"การสื่อสาร":72.5,"การทำงานเป็นทีม":74.3,"การเรียนรู้และพัฒนา":74},"q360":{"Q01":82.5,"Q02":77.5,"Q03":75,"Q04":76.7,"Q05":77.5,"Q06":75,"Q07":67.5,"Q08":77.5,"Q09":65,"Q10":77.5,"Q11":75,"Q12":75,"Q13":73.3,"Q14":70,"Q15":77.5,"Q16":77.5,"Q17":75,"Q18":80,"Q19":67.5,"Q20":70},"strengths":[{"id":"Q01","text":"ตรงต่อเวลา","score":82.5},{"id":"Q18","text":"ปรับตัวเร็ว","score":80},{"id":"Q02","text":"ทำงานครบถ้วน","score":77.5}],"develop":[{"id":"Q09","text":"แจ้งเรื่องเร็ว","score":65},{"id":"Q19","text":"สอนต่อได้","score":67.5},{"id":"Q07","text":"ฟังอย่างตั้งใจ","score":67.5}],"comments":[{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"ช่วยเพื่อนตอนร้านยุ่งเสมอ"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"รับผิดชอบงานดี ไว้ใจได้"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สุภาพกับลูกค้าและเพื่อนร่วมงาน"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สุภาพกับลูกค้าและเพื่อนร่วมงาน"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"ใจเย็นเวลามีปัญหาหน้างาน"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรตรวจงานให้ละเอียดก่อนส่งต่อ"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"บางครั้งพูดห้วนตอนร้านยุ่ง"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"อยากให้แจ้งปัญหาให้หัวหน้ารู้เร็วกว่านี้"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"}],"progress":{"assigned":9,"done":7,"received":8,"expected":9}},{"id":"E16","name":"สมศักดิ์ บุญเรือง","nick":"ศักดิ์","position":"พ่อครัว","team":"ครัว","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2ZiY2ZlOCcvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjODMxODQzJy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyM4MzE4NDMnLz48L3N2Zz4=","score360":78.8,"self":92,"gap":-13.2,"status":"พร้อมใช้เพื่อพัฒนา","raterCount":6,"invalidCount":0,"hiddenRels":["ต่างฝ่าย"],"groups":[{"rel":"ประเมินตนเอง","label":"ตนเอง","n":1,"score":92,"cat":{"ความรับผิดชอบในงาน":88,"การสื่อสาร":88,"การทำงานเป็นทีม":100,"การเรียนรู้และพัฒนา":92},"q":{"Q01":80,"Q02":80,"Q03":100,"Q04":80,"Q05":100,"Q06":80,"Q07":80,"Q08":80,"Q09":100,"Q10":100,"Q11":100,"Q12":100,"Q13":100,"Q14":100,"Q15":100,"Q16":80,"Q17":100,"Q18":80,"Q19":100,"Q20":100}},{"rel":"ผู้บังคับบัญชา","label":"หัวหน้า","n":1,"score":73,"cat":{"ความรับผิดชอบในงาน":72,"การสื่อสาร":68,"การทำงานเป็นทีม":76,"การเรียนรู้และพัฒนา":76},"q":{"Q01":60,"Q02":60,"Q03":100,"Q04":60,"Q05":80,"Q06":80,"Q07":60,"Q08":60,"Q09":60,"Q10":80,"Q11":80,"Q12":80,"Q13":60,"Q14":80,"Q15":80,"Q16":60,"Q17":80,"Q18":100,"Q19":60,"Q20":80}},{"rel":"เพื่อนร่วมงาน","label":"เพื่อน","n":3,"score":84.7,"cat":{"ความรับผิดชอบในงาน":82.7,"การสื่อสาร":85.3,"การทำงานเป็นทีม":86.7,"การเรียนรู้และพัฒนา":84},"q":{"Q01":86.7,"Q02":80,"Q03":73.3,"Q04":93.3,"Q05":80,"Q06":93.3,"Q07":86.7,"Q08":80,"Q09":73.3,"Q10":93.3,"Q11":86.7,"Q12":86.7,"Q13":80,"Q14":86.7,"Q15":93.3,"Q16":86.7,"Q17":80,"Q18":93.3,"Q19":80,"Q20":80}}],"cat360":{"ความรับผิดชอบในงาน":77.3,"การสื่อสาร":76.7,"การทำงานเป็นทีม":81.3,"การเรียนรู้และพัฒนา":80},"q360":{"Q01":73.3,"Q02":70,"Q03":86.7,"Q04":76.7,"Q05":80,"Q06":86.7,"Q07":73.3,"Q08":70,"Q09":66.7,"Q10":86.7,"Q11":83.3,"Q12":83.3,"Q13":70,"Q14":83.3,"Q15":86.7,"Q16":73.3,"Q17":80,"Q18":96.7,"Q19":70,"Q20":80},"strengths":[{"id":"Q18","text":"ปรับตัวเร็ว","score":96.7},{"id":"Q06","text":"พูดให้เข้าใจง่าย","score":86.7},{"id":"Q10","text":"สุภาพ","score":86.7}],"develop":[{"id":"Q09","text":"แจ้งเรื่องเร็ว","score":66.7},{"id":"Q19","text":"สอนต่อได้","score":70},{"id":"Q13","text":"เคารพความต่าง","score":70}],"comments":[{"topic":"เรื่องที่ควรพัฒนา","source":"ตนเอง","text":"บางครั้งพูดห้วนตอนร้านยุ่ง"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"รับผิดชอบงานดี ไว้ใจได้"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรเปิดรับคำแนะนำมากขึ้น"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"บางครั้งพูดห้วนตอนร้านยุ่ง"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"}],"progress":{"assigned":8,"done":7,"received":7,"expected":9}},{"id":"E17","name":"อรุณี ทองคำ","nick":"อร","position":"แม่ครัว","team":"ครัว","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2RkZDZmZScvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjNGMxZDk1Jy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyM0YzFkOTUnLz48L3N2Zz4=","score360":66.3,"self":81,"gap":-14.7,"status":"ยังไม่ครบ 2 มุมมอง","raterCount":5,"invalidCount":0,"hiddenRels":["เพื่อน","ต่างฝ่าย"],"groups":[{"rel":"ประเมินตนเอง","label":"ตนเอง","n":1,"score":81,"cat":{"ความรับผิดชอบในงาน":80,"การสื่อสาร":84,"การทำงานเป็นทีม":76,"การเรียนรู้และพัฒนา":84},"q":{"Q01":80,"Q02":60,"Q03":80,"Q04":80,"Q05":100,"Q06":80,"Q07":100,"Q08":80,"Q09":80,"Q10":80,"Q11":80,"Q12":60,"Q13":60,"Q14":100,"Q15":80,"Q16":80,"Q17":100,"Q18":80,"Q19":80,"Q20":80}},{"rel":"ผู้บังคับบัญชา","label":"หัวหน้า","n":1,"score":66.3,"cat":{"ความรับผิดชอบในงาน":64,"การสื่อสาร":55,"การทำงานเป็นทีม":76,"การเรียนรู้และพัฒนา":68},"q":{"Q01":60,"Q02":80,"Q03":80,"Q04":40,"Q05":60,"Q06":60,"Q07":60,"Q08":60,"Q09":null,"Q10":40,"Q11":80,"Q12":60,"Q13":80,"Q14":80,"Q15":80,"Q16":80,"Q17":60,"Q18":60,"Q19":60,"Q20":80}}],"cat360":{"ความรับผิดชอบในงาน":64,"การสื่อสาร":55,"การทำงานเป็นทีม":76,"การเรียนรู้และพัฒนา":68},"q360":{"Q01":60,"Q02":80,"Q03":80,"Q04":40,"Q05":60,"Q06":60,"Q07":60,"Q08":60,"Q09":null,"Q10":40,"Q11":80,"Q12":60,"Q13":80,"Q14":80,"Q15":80,"Q16":80,"Q17":60,"Q18":60,"Q19":60,"Q20":80},"strengths":[{"id":"Q02","text":"ทำงานครบถ้วน","score":80},{"id":"Q03","text":"ใส่ใจคุณภาพ","score":80},{"id":"Q11","text":"ช่วยเหลือเพื่อน","score":80}],"develop":[{"id":"Q10","text":"สุภาพ","score":40},{"id":"Q04","text":"ยอมรับความผิดพลาด","score":40},{"id":"Q19","text":"สอนต่อได้","score":60}],"comments":[{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรตรวจงานให้ละเอียดก่อนส่งต่อ"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรเปิดรับคำแนะนำมากขึ้น"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"}],"progress":{"assigned":8,"done":8,"received":6,"expected":9}},{"id":"E18","name":"บุญมี ศรีวงศ์","nick":"มี","position":"ผู้ช่วยครัว","team":"ครัว","photo":"","score360":57.9,"self":70,"gap":-12.1,"status":"พร้อมใช้เพื่อพัฒนา","raterCount":6,"invalidCount":0,"hiddenRels":["ต่างฝ่าย"],"groups":[{"rel":"ประเมินตนเอง","label":"ตนเอง","n":1,"score":70,"cat":{"ความรับผิดชอบในงาน":72,"การสื่อสาร":72,"การทำงานเป็นทีม":64,"การเรียนรู้และพัฒนา":72},"q":{"Q01":80,"Q02":80,"Q03":60,"Q04":60,"Q05":80,"Q06":80,"Q07":60,"Q08":80,"Q09":60,"Q10":80,"Q11":60,"Q12":60,"Q13":60,"Q14":60,"Q15":80,"Q16":60,"Q17":60,"Q18":80,"Q19":80,"Q20":80}},{"rel":"ผู้บังคับบัญชา","label":"หัวหน้า","n":1,"score":55.8,"cat":{"ความรับผิดชอบในงาน":60,"การสื่อสาร":52,"การทำงานเป็นทีม":60,"การเรียนรู้และพัฒนา":52},"q":{"Q01":null,"Q02":60,"Q03":60,"Q04":60,"Q05":60,"Q06":60,"Q07":60,"Q08":40,"Q09":60,"Q10":40,"Q11":60,"Q12":60,"Q13":60,"Q14":60,"Q15":60,"Q16":60,"Q17":40,"Q18":60,"Q19":60,"Q20":40}},{"rel":"เพื่อนร่วมงาน","label":"เพื่อน","n":4,"score":60.1,"cat":{"ความรับผิดชอบในงาน":62.8,"การสื่อสาร":58,"การทำงานเป็นทีม":60.3,"การเรียนรู้และพัฒนา":60},"q":{"Q01":75,"Q02":55,"Q03":60,"Q04":60,"Q05":60,"Q06":65,"Q07":55,"Q08":60,"Q09":60,"Q10":50,"Q11":70,"Q12":53.3,"Q13":55,"Q14":55,"Q15":66.7,"Q16":65,"Q17":60,"Q18":60,"Q19":60,"Q20":55}}],"cat360":{"ความรับผิดชอบในงาน":61.4,"การสื่อสาร":55,"การทำงานเป็นทีม":60.1,"การเรียนรู้และพัฒนา":56},"q360":{"Q01":75,"Q02":57.5,"Q03":60,"Q04":60,"Q05":60,"Q06":62.5,"Q07":57.5,"Q08":50,"Q09":60,"Q10":45,"Q11":65,"Q12":56.7,"Q13":57.5,"Q14":57.5,"Q15":63.3,"Q16":62.5,"Q17":50,"Q18":60,"Q19":60,"Q20":47.5},"strengths":[{"id":"Q01","text":"ตรงต่อเวลา","score":75},{"id":"Q11","text":"ช่วยเหลือเพื่อน","score":65},{"id":"Q15","text":"สร้างบรรยากาศดี","score":63.3}],"develop":[{"id":"Q10","text":"สุภาพ","score":45},{"id":"Q20","text":"เสนอไอเดีย","score":47.5},{"id":"Q17","text":"ปรับปรุงจริง","score":50}],"comments":[{"topic":"จุดเด่นที่สังเกตได้","source":"ตนเอง","text":"สอนน้องใหม่ด้วยความใจเย็น"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"ช่วยเพื่อนตอนร้านยุ่งเสมอ"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สุภาพกับลูกค้าและเพื่อนร่วมงาน"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"บางครั้งพูดห้วนตอนร้านยุ่ง"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"บางครั้งพูดห้วนตอนร้านยุ่ง"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"}],"progress":{"assigned":8,"done":6,"received":7,"expected":8}},{"id":"E19","name":"ทองใบ แสนดี","nick":"ใบ","position":"ผู้ช่วยครัว","team":"ครัว","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2ZkZTY4YScvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjOTI0MDBlJy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyM5MjQwMGUnLz48L3N2Zz4=","score360":66.1,"self":74,"gap":-7.9,"status":"พร้อมใช้เพื่อพัฒนา","raterCount":8,"invalidCount":0,"hiddenRels":[],"groups":[{"rel":"ประเมินตนเอง","label":"ตนเอง","n":1,"score":74,"cat":{"ความรับผิดชอบในงาน":76,"การสื่อสาร":76,"การทำงานเป็นทีม":72,"การเรียนรู้และพัฒนา":72},"q":{"Q01":80,"Q02":60,"Q03":80,"Q04":80,"Q05":80,"Q06":60,"Q07":80,"Q08":80,"Q09":80,"Q10":80,"Q11":80,"Q12":80,"Q13":80,"Q14":60,"Q15":60,"Q16":60,"Q17":60,"Q18":80,"Q19":80,"Q20":80}},{"rel":"ผู้บังคับบัญชา","label":"หัวหน้า","n":1,"score":65.3,"cat":{"ความรับผิดชอบในงาน":68,"การสื่อสาร":68,"การทำงานเป็นทีม":64,"การเรียนรู้และพัฒนา":60},"q":{"Q01":80,"Q02":80,"Q03":60,"Q04":60,"Q05":60,"Q06":60,"Q07":60,"Q08":60,"Q09":80,"Q10":80,"Q11":60,"Q12":60,"Q13":60,"Q14":80,"Q15":60,"Q16":60,"Q17":40,"Q18":80,"Q19":null,"Q20":60}},{"rel":"เพื่อนร่วมงาน","label":"เพื่อน","n":4,"score":67.3,"cat":{"ความรับผิดชอบในงาน":69,"การสื่อสาร":68,"การทำงานเป็นทีม":67.8,"การเรียนรู้และพัฒนา":64.5},"q":{"Q01":70,"Q02":65,"Q03":65,"Q04":70,"Q05":75,"Q06":65,"Q07":75,"Q08":65,"Q09":60,"Q10":75,"Q11":70,"Q12":70,"Q13":60,"Q14":80,"Q15":60,"Q16":65,"Q17":60,"Q18":75,"Q19":65,"Q20":55}},{"rel":"ผู้ร่วมงานต่างฝ่าย","label":"ต่างฝ่าย","n":3,"score":65.8,"cat":{"ความรับผิดชอบในงาน":69.7,"การสื่อสาร":64.7,"การทำงานเป็นทีม":64,"การเรียนรู้และพัฒนา":66},"q":{"Q01":70,"Q02":60,"Q03":66.7,"Q04":80,"Q05":73.3,"Q06":60,"Q07":66.7,"Q08":66.7,"Q09":60,"Q10":70,"Q11":60,"Q12":60,"Q13":53.3,"Q14":73.3,"Q15":73.3,"Q16":60,"Q17":60,"Q18":66.7,"Q19":73.3,"Q20":66.7}}],"cat360":{"ความรับผิดชอบในงาน":68.9,"การสื่อสาร":66.9,"การทำงานเป็นทีม":65.3,"การเรียนรู้และพัฒนา":63.5},"q360":{"Q01":73.3,"Q02":68.3,"Q03":63.9,"Q04":70,"Q05":69.4,"Q06":61.7,"Q07":67.2,"Q08":63.9,"Q09":66.7,"Q10":75,"Q11":63.3,"Q12":63.3,"Q13":57.8,"Q14":77.8,"Q15":64.4,"Q16":61.7,"Q17":53.3,"Q18":73.9,"Q19":69.2,"Q20":60.6},"strengths":[{"id":"Q14","text":"คุยกันเมื่อเห็นต่าง","score":77.8},{"id":"Q10","text":"สุภาพ","score":75},{"id":"Q18","text":"ปรับตัวเร็ว","score":73.9}],"develop":[{"id":"Q17","text":"ปรับปรุงจริง","score":53.3},{"id":"Q13","text":"เคารพความต่าง","score":57.8},{"id":"Q20","text":"เสนอไอเดีย","score":60.6}],"comments":[{"topic":"จุดเด่นที่สังเกตได้","source":"ตนเอง","text":"รับผิดชอบงานดี ไว้ใจได้"},{"topic":"เรื่องที่ควรพัฒนา","source":"ตนเอง","text":"ควรตรวจงานให้ละเอียดก่อนส่งต่อ"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"ช่วยเพื่อนตอนร้านยุ่งเสมอ"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"รับผิดชอบงานดี ไว้ใจได้"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สอนน้องใหม่ด้วยความใจเย็น"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สุภาพกับลูกค้าและเพื่อนร่วมงาน"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"บางครั้งพูดห้วนตอนร้านยุ่ง"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"อยากให้แจ้งปัญหาให้หัวหน้ารู้เร็วกว่านี้"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"}],"progress":{"assigned":8,"done":8,"received":9,"expected":9}},{"id":"E20","name":"สมหญิง พึ่งบุญ","nick":"หญิง","position":"พนักงานล้างจาน","team":"ครัว","photo":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nI2JmZGJmZScvPjxjaXJjbGUgY3g9JzUwJyBjeT0nNDAnIHI9JzE4JyBmaWxsPScjMWUzYThhJy8+PHBhdGggZD0nTTE4IDEwMCBxMzIgLTUwIDY0IDAnIGZpbGw9JyMxZTNhOGEnLz48L3N2Zz4=","score360":78.4,"self":94.7,"gap":-16.4,"status":"พร้อมใช้เพื่อพัฒนา","raterCount":7,"invalidCount":0,"hiddenRels":["ต่างฝ่าย"],"groups":[{"rel":"ประเมินตนเอง","label":"ตนเอง","n":1,"score":94.7,"cat":{"ความรับผิดชอบในงาน":88,"การสื่อสาร":95,"การทำงานเป็นทีม":100,"การเรียนรู้และพัฒนา":96},"q":{"Q01":80,"Q02":80,"Q03":80,"Q04":100,"Q05":100,"Q06":null,"Q07":100,"Q08":80,"Q09":100,"Q10":100,"Q11":100,"Q12":100,"Q13":100,"Q14":100,"Q15":100,"Q16":80,"Q17":100,"Q18":100,"Q19":100,"Q20":100}},{"rel":"ผู้บังคับบัญชา","label":"หัวหน้า","n":1,"score":78,"cat":{"ความรับผิดชอบในงาน":84,"การสื่อสาร":76,"การทำงานเป็นทีม":72,"การเรียนรู้และพัฒนา":80},"q":{"Q01":80,"Q02":80,"Q03":80,"Q04":100,"Q05":80,"Q06":60,"Q07":100,"Q08":60,"Q09":80,"Q10":80,"Q11":80,"Q12":60,"Q13":60,"Q14":80,"Q15":80,"Q16":80,"Q17":80,"Q18":80,"Q19":80,"Q20":80}},{"rel":"เพื่อนร่วมงาน","label":"เพื่อน","n":4,"score":78.8,"cat":{"ความรับผิดชอบในงาน":76,"การสื่อสาร":76.8,"การทำงานเป็นทีม":79,"การเรียนรู้และพัฒนา":83},"q":{"Q01":80,"Q02":80,"Q03":80,"Q04":65,"Q05":75,"Q06":85,"Q07":73.3,"Q08":70,"Q09":75,"Q10":80,"Q11":85,"Q12":80,"Q13":75,"Q14":80,"Q15":75,"Q16":80,"Q17":90,"Q18":80,"Q19":95,"Q20":70}}],"cat360":{"ความรับผิดชอบในงาน":80,"การสื่อสาร":76.4,"การทำงานเป็นทีม":75.5,"การเรียนรู้และพัฒนา":81.5},"q360":{"Q01":80,"Q02":80,"Q03":80,"Q04":82.5,"Q05":77.5,"Q06":72.5,"Q07":86.7,"Q08":65,"Q09":77.5,"Q10":80,"Q11":82.5,"Q12":70,"Q13":67.5,"Q14":80,"Q15":77.5,"Q16":80,"Q17":85,"Q18":80,"Q19":87.5,"Q20":75},"strengths":[{"id":"Q19","text":"สอนต่อได้","score":87.5},{"id":"Q07","text":"ฟังอย่างตั้งใจ","score":86.7},{"id":"Q17","text":"ปรับปรุงจริง","score":85}],"develop":[{"id":"Q08","text":"ส่งต่องานเรียบร้อย","score":65},{"id":"Q13","text":"เคารพความต่าง","score":67.5},{"id":"Q12","text":"แบ่งงานยุติธรรม","score":70}],"comments":[{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ตนเอง","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"รับผิดชอบงานดี ไว้ใจได้"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สอนน้องใหม่ด้วยความใจเย็น"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สุภาพกับลูกค้าและเพื่อนร่วมงาน"},{"topic":"จุดเด่นที่สังเกตได้","source":"ผู้อื่น","text":"สุภาพกับลูกค้าและเพื่อนร่วมงาน"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรตรวจงานให้ละเอียดก่อนส่งต่อ"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"ควรเปิดรับคำแนะนำมากขึ้น"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"บางครั้งพูดห้วนตอนร้านยุ่ง"},{"topic":"เรื่องที่ควรพัฒนา","source":"ผู้อื่น","text":"บางครั้งพูดห้วนตอนร้านยุ่ง"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"ถ้าแบ่งหน้าที่ตอนเปลี่ยนกะชัดขึ้นจะดีมาก"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"},{"topic":"ข้อเสนอแนะเพิ่มเติม","source":"ผู้อื่น","text":"อยากให้มีประชุมสั้น ๆ ก่อนเปิดร้านทุกวัน"}],"progress":{"assigned":8,"done":8,"received":8,"expected":9}}]}};</script>
+</head>
+<body>
+<div id="demoBar" hidden>
+  <span>โหมดเดโม (ข้อมูลจำลอง ไม่บันทึกจริง)</span>
+  <button id="dStaff" onclick="switchMode('staff')">มุมมองพนักงาน (มือถือ)</button>
+  <button id="dHr" onclick="switchMode('hr')">Dashboard HR</button>
+</div>
+<main id="app"><div class="spin"></div></main>
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+ * การเชื่อมต่อเซิร์ฟเวอร์
+ * ============================================================ */
+const TEMPLATE_MODE = '<?= mode ?>';
+const HAS_GAS = typeof google !== 'undefined' && google.script && google.script.run;
+const DEMO = !HAS_GAS && !!window.DEMO_DATA;
+let MODE = TEMPLATE_MODE.indexOf('<') === 0 ? 'staff' : TEMPLATE_MODE;
+
+function api(fn) {
+  const args = Array.prototype.slice.call(arguments, 1);
+  if (HAS_GAS) {
+    return new Promise((resolve, reject) => {
+      google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)[fn].apply(null, args);
+    });
+  }
+  if (DEMO) return new Promise(resolve => setTimeout(() => resolve(Demo[fn].apply(null, args)), 300));
+  return Promise.reject(new Error('ไม่ได้เปิดผ่าน Apps Script Web App'));
+}
+
+const $app = document.getElementById('app');
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const COLORS = ['#2f5d8f', '#c76b2a', '#2f8f5b', '#8e44ad', '#b03a48', '#1f7a7a', '#6d5d2f', '#3d5a80'];
+const colorFor = id => COLORS[[...String(id)].reduce((s, c) => s + c.charCodeAt(0), 0) % COLORS.length];
+const initial = s => String(s || '?').trim().charAt(0);
+/** วงกลมรูปพนักงาน: มีรูปแสดงรูป (โหลดไม่ได้ก็กลับเป็นตัวอักษร) ไม่มีรูปแสดงตัวอักษรแรกของชื่อ */
+function ava(id, nick, photo, size, extra) {
+  const sz = size ? `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.4)}px;` : '';
+  const img = photo ? `<img src="${esc(photo)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : '';
+  const zoom = photo ? ` zoom" onclick="event.stopPropagation();showPhoto('${esc(photo)}')` : '';
+  return `<span class="ava${zoom}" style="${sz}${extra || ''}">${esc(initial(nick))}${img}</span>`;
+}
+/** หน้ายิ้มเส้นเดียวกันทั้งชุด แทนอีโมจิ */
+const FACE = { 5: 'M7.5 13.5q4.5 5 9 0', 4: 'M8.5 14.5q3.5 2.5 7 0', 3: 'M8.5 15.5h7', 2: 'M8.5 16.5q3.5-2.5 7 0', 1: 'M8 17q4-4 8 0' };
+function face(v, size) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><circle cx="9" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><path d="${FACE[v]}"/></svg>`;
+}
+/** สีพาสเทลตามระดับ: ระดับ 1–5 หรือคะแนนเต็ม 100 */
+const TONES = { 5: ['#cfeccf', '#1f4a2b'], 4: ['#dcefc9', '#3d5a1c'], 3: ['#f5ecc4', '#6b5410'], 2: ['#fadcc6', '#7a3f17'], 1: ['#f7d1d6', '#7a2533'] };
+const lvl = v => v >= 85 ? 5 : v >= 75 ? 4 : v >= 65 ? 3 : v >= 55 ? 2 : 1;
+function toneStyle(level) { const t = TONES[level]; return `background:${t[0]};color:${t[1]}`; }
+function chipScore(v, sm) { return v == null ? `<span class="chipscore none ${sm ? 'sm' : ''}">รอผล</span>` : `<span class="chipscore ${sm ? 'sm' : ''}" style="${toneStyle(lvl(v))}">${f1(v)}</span>`; }
+const ICON_CHECK = '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10-10"/></svg>';
+function ring(frac, size, label) {
+  const c = 94.2, d = Math.max(0, Math.min(1, frac)) * c;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 36 36" role="img" aria-label="${esc(label)}" style="flex:none"><circle cx="18" cy="18" r="15" fill="none" stroke="#d5e8e3" stroke-width="4"/><circle cx="18" cy="18" r="15" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="${d} ${c}" transform="rotate(-90 18 18)"/></svg>`;
+}
+const ICON_REFRESH = '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>';
+const ICON_LOCK = '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+function showPhoto(url) {
+  const d = document.createElement('div');
+  d.id = 'photoView';
+  d.innerHTML = `<img src="${esc(url)}" alt="" referrerpolicy="no-referrer">`;
+  d.onclick = () => d.remove();
+  document.body.appendChild(d);
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2600);
+}
+function loading() { $app.innerHTML = '<div class="spin"></div>'; }
+function fail(e) { return (e && (e.msg || e.message)) || 'เกิดข้อผิดพลาด กรุณาลองใหม่'; }
+
+/* ============================================================
+ * หน้าพนักงาน: เลือกชื่อ → PIN → รายชื่อที่ต้องประเมิน → ทำทีละข้อ → ส่ง
+ * ============================================================ */
+const S = { info: null, list: [], q: '', me: null, pin: '', data: null, task: null, steps: [], idx: 0, drafts: {}, busy: false, fromReview: false };
+
+function staffStart() {
+  loading();
+  api('apiStaffList').then(res => {
+    S.info = res; S.list = res.staff || [];
+    if (!res.isOpen) { $app.innerHTML = `<div class="wrap"><div class="hero"><div class="eyebrow">${esc(res.org)}</div><h1>ปิดรับแบบประเมินแล้ว</h1><div class="muted">ขอบคุณที่ให้ความร่วมมือ</div></div></div>`; return; }
+    renderPick();
+  }).catch(e => { $app.innerHTML = `<div class="wrap"><div class="err">${esc(fail(e))}</div></div>`; });
+}
+
+function renderPick() {
+  $app.innerHTML = `
+  <div class="wrap stack">
+    <div class="hero">
+      <div class="eyebrow">${esc(S.info.org)}</div>
+      <h1>แบบประเมิน 360 องศา</h1>
+      <div class="muted">${esc(S.info.cycle)}</div>
+    </div>
+    <div><label class="f" for="q">ค้นหาชื่อของคุณ</label>
+      <input class="in" id="q" placeholder="พิมพ์ชื่อเล่นหรือชื่อจริง" value="${esc(S.q)}" autocomplete="off"></div>
+    <div id="plist" class="stack"></div>
+    <p class="muted center small row" style="justify-content:center;gap:8px">${ICON_LOCK}<span>คำตอบเป็นความลับ ผู้รับการประเมินจะไม่รู้ว่าใครตอบอะไร</span></p>
+  </div>`;
+  const q = document.getElementById('q');
+  q.addEventListener('input', () => { S.q = q.value; renderPickList(); });
+  renderPickList();
+}
+
+function renderPickList() {
+  const k = S.q.trim().toLowerCase();
+  const list = S.list.filter(e => !k || (e.nick + ' ' + e.name + ' ' + e.position).toLowerCase().indexOf(k) >= 0)
+    .sort((a, b) => a.nick.localeCompare(b.nick, 'th'));
+  document.getElementById('plist').innerHTML = list.length ? list.map(e => `
+    <button class="pick" onclick="pickMe('${esc(e.id)}')">
+      ${ava(e.id, e.nick, '')}
+      <span><div class="t1">${esc(e.nick)}</div><div class="muted small">${esc(e.name)} · ${esc(e.position)}</div></span>
+    </button>`).join('') : '<div class="muted center">ไม่พบชื่อ ลองพิมพ์ใหม่ หรือติดต่อ HR</div>';
+}
+
+function pickMe(id) { S.me = S.list.find(e => e.id === id); renderPin(); }
+
+function renderPin(err) {
+  const e = S.me;
+  $app.innerHTML = `
+  <div class="wrap stack">
+    <button class="link" onclick="renderPick()">‹ ไม่ใช่ฉัน</button>
+    <div class="hero" style="padding-top:4px">
+      ${ava(e.id, e.nick, '', 72, 'margin:0 auto 12px')}
+      <h1>${esc(e.nick)}</h1><div class="muted">${esc(e.position)}</div>
+    </div>
+    <form class="card stack" id="pf" autocomplete="off">
+      <div><label class="f" for="pin">ใส่ PIN 4 หลัก (จากใบที่ HR แจก)</label>
+        <input class="in pin" id="pin" type="password" inputmode="numeric" maxlength="6" placeholder="••••"></div>
+      ${err ? `<div class="err">${esc(err)}</div>` : ''}
+      <button class="btn" type="submit">เข้าสู่ระบบ</button>
+      ${DEMO ? `<div class="note">เดโม: PIN ของทุกคนคือ 1 ตามด้วยเลขรหัส เช่น แนน (E05) = <b>1005</b></div>` : ''}
+    </form>
+  </div>`;
+  document.getElementById('pf').onsubmit = ev => { ev.preventDefault(); doLogin(); };
+  document.getElementById('pin').focus();
+}
+
+function doLogin() {
+  const pin = document.getElementById('pin').value.trim();
+  if (!pin) return renderPin('กรุณาใส่ PIN');
+  loading();
+  api('apiLogin', S.me.id, pin).then(res => {
+    if (!res.ok) return renderPin(res.msg);
+    S.pin = pin; S.data = res; S.drafts = {}; renderList();
+  }).catch(e => renderPin(fail(e)));
+}
+
+function logout() { S.pin = ''; S.data = null; S.drafts = {}; S.q = ''; renderPick(); }
+
+function renderList() {
+  const d = S.data;
+  const tasks = d.tasks.slice().sort((a, b) => (a.done - b.done));
+  const done = d.tasks.filter(t => t.done).length, total = d.tasks.length;
+  const allDone = total > 0 && done === total;
+  $app.innerHTML = `
+  <div class="wrap stack">
+    <div class="row">
+      <div><div class="eyebrow">${esc(d.rater.nick)} · ${esc(d.cycle)}</div><h1>รายชื่อที่ต้องประเมิน</h1></div>
+      <div class="spacer"></div>
+      <button class="link" onclick="logout()">ออกจากระบบ</button>
+    </div>
+    <div class="card row" style="background:var(--accent-soft);border-color:transparent;flex-wrap:nowrap;gap:16px">
+      ${ring(total ? done / total : 0, 56, `ทำแล้ว ${done} จาก ${total} คน`)}
+      <div><div style="font-size:17px;font-weight:500">ทำแล้ว ${done} จาก ${total} คน</div><div class="muted">คนละประมาณ 3–4 นาที ทำค้างไว้ได้</div></div>
+    </div>
+    ${allDone ? `<div class="card center stack"><h2>ทำครบทุกคนแล้ว</h2><div class="muted">ขอบคุณที่ช่วยกันประเมิน ผลจะส่งถึง HR โดยไม่ระบุชื่อผู้ตอบ</div>
+      <button class="btn" onclick="logout()">ออกจากระบบ</button></div>`
+      : ''}
+    ${tasks.map(t => `
+      <button class="task ${t.done ? 'done' : ''}" ${t.done ? 'disabled' : `onclick="startTask('${t.pairId}')"`}>
+        ${ava(t.rateeId, t.rateeNick, t.rateePhoto)}
+        <span style="flex:1;min-width:0">
+          <div class="t1">${esc(t.rateeNick)}</div>
+          <div class="rel">${esc(t.relLabel)}${t.isSelf ? '' : ' · ' + esc(t.position)}${S.drafts[t.pairId] && !t.done ? ' · ทำค้างไว้ ' + Object.keys(S.drafts[t.pairId]).length + '/' + t.qids.length : ''}</div>
+        </span>
+        ${t.done ? `<span class="pill done">${ICON_CHECK}เสร็จแล้ว</span>` : S.drafts[t.pairId] ? '<span class="pill soft">ทำต่อ</span>' : '<span class="pill">เริ่ม</span>'}
+      </button>`).join('')}
+  </div>`;
+  window.scrollTo(0, 0);
+}
+
+function startTask(pairId) {
+  const t = S.data.tasks.find(x => x.pairId === pairId);
+  if (!t || t.done) return;
+  const qById = {}; S.data.questions.forEach(q => qById[q.id] = q);
+  S.task = t;
+  S.steps = t.qids.map(id => qById[id]).filter(Boolean);
+  S.answers = S.drafts[pairId] = S.drafts[pairId] || {};
+  S.idx = 0;
+  while (S.idx < S.steps.length - 1 && S.answers[S.steps[S.idx].id] !== undefined) S.idx++;
+  S.fromReview = false;
+  renderStep();
+}
+
+function renderStep() {
+  const q = S.steps[S.idx], t = S.task, total = S.steps.length;
+  const a = S.answers[q.id];
+  const who = t.isSelf ? 'ประเมินตัวเอง' : `ประเมิน <b>${esc(t.rateeNick)}</b> · ${esc(t.relLabel)}`;
+  let body;
+  if (q.type === 'ข้อความ') {
+    body = `
+      <textarea class="in" id="txt" placeholder="พิมพ์สั้น ๆ ได้ (ไม่บังคับ)">${esc(a && a.text || '')}</textarea>
+      <div class="row" style="margin-top:12px;flex-wrap:nowrap">
+        <button class="btn ghost" onclick="saveText(true)">ข้าม</button>
+        <button class="btn" onclick="saveText(false)">ถัดไป</button>
+      </div>`;
+  } else {
+    const sel = a ? a.score : null;
+    body = `<div class="scale">` + S.data.scale.map(s => `
+      <button class="opt ${sel === s.v ? 'sel' : ''}" onclick="choose(${s.v})" aria-label="${s.v} ${esc(s.label)}">
+        <span class="face" style="${toneStyle(s.v)}">${face(s.v, 36)}</span><span>${esc(s.label)}</span>
+      </button>`).join('') +
+      `<button class="opt na ${sel === 0 ? 'sel' : ''}" onclick="choose(0)"><b>N/A</b><span>ไม่มีข้อมูล<br>เพียงพอ</span></button></div>`;
+  }
+  $app.innerHTML = `
+  <div class="wrap">
+    <div class="qhead">
+      <button class="link" onclick="prev()">‹ ${S.idx === 0 ? 'รายชื่อ' : 'ย้อนกลับ'}</button>
+      <div class="spacer"></div><span class="tick">ข้อ ${S.idx + 1}/${total}</span>
+    </div>
+    <div class="bar"><i style="width:${S.idx * 100 / total}%"></i></div>
+    <div style="margin-top:20px">
+      <div class="row" style="flex-wrap:nowrap">${t.isSelf ? '' : ava(t.rateeId, t.rateeNick, t.rateePhoto, 40)}<div class="who">${who}</div></div>
+      <div class="eyebrow" style="margin-top:16px">${esc(q.category)}</div>
+      <div class="qtext">${esc(q.text)}</div>
+      ${q.criteria && q.type !== 'ข้อความ' ? `<div class="crit">${esc(q.criteria)}</div>` : ''}
+      ${body}
+    </div>
+  </div>`;
+  window.scrollTo(0, 0);
+}
+
+function choose(v) {
+  if (S.busy) return;
+  S.busy = true;
+  S.answers[S.steps[S.idx].id] = { score: v };
+  const btns = [...document.querySelectorAll('.opt')];
+  btns.forEach(b => b.classList.remove('sel'));
+  const i = v === 0 ? btns.length - 1 : S.data.scale.findIndex(s => s.v === v);
+  if (btns[i]) btns[i].classList.add('sel');
+  setTimeout(() => { S.busy = false; next(); }, 220);
+}
+
+function saveText(skip) {
+  S.answers[S.steps[S.idx].id] = { text: skip ? '' : document.getElementById('txt').value.trim() };
+  next();
+}
+
+function next() {
+  if (S.fromReview || S.idx >= S.steps.length - 1) return renderReview();
+  S.idx++; renderStep();
+}
+function prev() {
+  if (S.fromReview) return renderReview();
+  if (S.idx === 0) return renderList();
+  S.idx--; renderStep();
+}
+
+function answerLabel(q) {
+  const a = S.answers[q.id];
+  if (q.type === 'ข้อความ') return a && a.text ? '✎ เขียนแล้ว' : '<span class="muted">ไม่ได้เขียน</span>';
+  if (!a) return '<span style="color:var(--danger)">ยังไม่ตอบ</span>';
+  if (a.score === 0) return 'N/A';
+  const s = S.data.scale.find(x => x.v === a.score);
+  return `<span class="face" style="${toneStyle(s.v)}">${face(s.v, 18)}</span><span>${esc(s.label)}</span>`;
+}
+
+function renderReview(err) {
+  S.fromReview = true;
+  const t = S.task;
+  const rating = S.steps.filter(q => q.type !== 'ข้อความ');
+  const missing = rating.filter(q => !S.answers[q.id]).length;
+  const answered = rating.filter(q => S.answers[q.id] && S.answers[q.id].score > 0).length;
+  const need = Math.min(S.data.minAnswered || 0, rating.length);
+  $app.innerHTML = `
+  <div class="wrap stack">
+    <div class="row"><button class="link" onclick="renderList()">‹ รายชื่อ</button></div>
+    <div><h2>ตรวจคำตอบก่อนส่ง</h2>
+      <div class="muted">${t.isSelf ? 'ประเมินตัวเอง' : 'ประเมิน ' + esc(t.rateeNick) + ' · ' + esc(t.relLabel)} · แตะข้อเพื่อแก้</div></div>
+    <div class="card">
+      ${S.steps.map((q, i) => `
+        <div class="review-item" onclick="jump(${i})">
+          <div class="q">${i + 1}. ${esc(q.text)}</div><div class="a">${answerLabel(q)}</div>
+        </div>`).join('')}
+    </div>
+    ${err ? `<div class="err">${esc(err)}</div>` : ''}
+    ${missing ? `<div class="err">ยังไม่ได้ตอบ ${missing} ข้อ</div>` : ''}
+    ${!missing && answered < need ? `<div class="warn">ตอบ N/A ไป ${rating.length - answered} ข้อ — ต้องให้คะแนนอย่างน้อย ${need} ข้อ คำตอบชุดนี้จึงจะถูกนำไปคิดคะแนน ส่งได้ แต่แนะนำให้ทบทวนข้อที่พอมีข้อมูล</div>` : ''}
+    <button class="btn ok" ${missing ? 'disabled' : ''} onclick="submitTask()">ส่งแบบประเมิน</button>
+  </div>`;
+  window.scrollTo(0, 0);
+}
+
+function jump(i) { S.idx = i; renderStep(); }
+
+function submitTask() {
+  const t = S.task;
+  const answers = S.steps.map(q => Object.assign({ q: q.id }, S.answers[q.id] || {}));
+  loading();
+  api('apiSubmit', S.me.id, S.pin, t.pairId, answers).then(res => {
+    if (!res.ok) return renderReview(res.msg);
+    delete S.drafts[t.pairId];
+    S.data = res; S.task = null; S.fromReview = false;
+    renderList();
+    toast(t.isSelf ? 'ส่งแบบประเมินตัวเองแล้ว' : `ส่งแบบประเมินของ ${t.rateeNick} แล้ว`);
+  }).catch(e => renderReview(fail(e)));
+}
+
+/* ============================================================
+ * Dashboard HR (?mode=hr)
+ * ============================================================ */
+const D = { pin: '', data: null, tab: 'overview', person: null, team: '', q: '', sort: 'score', at: null };
+
+const f1 = v => v == null ? '–' : Number(v).toFixed(1);
+/** ตัวเลขคะแนน: ตัวเลขธรรมดา ต่ำกว่า 70 เป็นสีเตือน */
+function scoreCell(v) { return `<span class="num ${v != null && v < 70 ? 'low' : ''}">${f1(v)}</span>`; }
+const statusChip = s => `<span class="dot ${s === 'พร้อมใช้เพื่อพัฒนา' ? 'st-ok' : s === 'ยังไม่มีข้อมูล' ? 'st-none' : 'st-warn'}">${esc(s === 'พร้อมใช้เพื่อพัฒนา' ? 'พร้อมใช้' : s)}</span>`;
+
+function hrStart(err) {
+  $app.innerHTML = `
+  <div class="wrap">
+    <div class="hero"><div class="eyebrow">สำหรับ HR เท่านั้น</div><h1>ผลประเมิน 360 องศา</h1></div>
+    <form class="card stack" id="hf">
+      <div><label class="f" for="hpin">PIN ของ HR</label>
+        <input class="in pin" id="hpin" type="password" inputmode="numeric" maxlength="8" placeholder="••••"></div>
+      ${err ? `<div class="err">${esc(err)}</div>` : ''}
+      <button class="btn" type="submit">เข้าสู่ระบบ</button>
+      ${DEMO ? '<div class="note">เดโม: PIN <b>9999</b></div>' : ''}
+    </form>
+  </div>`;
+  document.getElementById('hf').onsubmit = ev => {
+    ev.preventDefault();
+    D.pin = document.getElementById('hpin').value.trim();
+    hrLoad(true);
+  };
+  document.getElementById('hpin').focus();
+}
+
+function hrLoad(first) {
+  if (first) loading();
+  api('apiHrData', D.pin).then(res => {
+    if (!res.ok) return hrStart(res.msg);
+    D.data = res; D.at = new Date();
+    if (D.person && !res.people.some(p => p.id === D.person)) D.person = null;
+    renderHr();
+    if (!first) toast('อัปเดตข้อมูลล่าสุดแล้ว');
+  }).catch(e => hrStart(fail(e)));
+}
+
+function setTab(t) { D.tab = t; D.person = null; renderHr(); }
+function openPerson(id) { D.person = id; renderHr(); window.scrollTo(0, 0); }
+
+function renderHr() {
+  const d = D.data;
+  const time = D.at ? D.at.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '';
+  let body = '';
+  if (D.person) body = hrPerson(d.people.find(p => p.id === D.person));
+  else if (D.tab === 'progress') body = hrProgress();
+  else body = hrOverview();
+  const pp = D.person ? d.people.find(p => p.id === D.person) : null;
+  document.body.classList.toggle('has-report', !!pp);
+  $app.innerHTML = `
+  <div class="wrap wide stack screen">
+    <div class="row" style="align-items:flex-end;gap:16px">
+      <div><div class="muted">${esc(d.org)} · ${esc(d.cycle)}</div><h1 style="font-size:32px;margin:0">ผลประเมิน 360 องศา</h1></div>
+      <div class="spacer"></div>
+      <div class="tabs noprint">
+        <button class="${D.tab === 'overview' || D.person ? 'on' : ''}" onclick="setTab('overview')">ภาพรวม</button>
+        <button class="${D.tab === 'progress' && !D.person ? 'on' : ''}" onclick="setTab('progress')">ความคืบหน้า</button>
+      </div>
+      <button class="btn ghost sm noprint" onclick="hrLoad(false)" title="ข้อมูล ณ ${time}">${ICON_REFRESH}<span>รีเฟรช</span></button>
+    </div>
+    ${body}
+  </div>${pp ? reportDoc(pp) : ''}`;
+  const q = document.getElementById('fq');
+  if (q) { q.addEventListener('input', () => { D.q = q.value; renderPeopleTable(); }); }
+  if (document.getElementById('ptable')) renderPeopleTable();
+}
+
+function hrOverview() {
+  const d = D.data;
+  const ready = d.people.filter(p => p.status === 'พร้อมใช้เพื่อพัฒนา');
+  const scored = d.people.filter(p => p.score360 != null);
+  const avg = scored.length ? scored.reduce((s, p) => s + p.score360, 0) / scored.length : null;
+  const rate = d.totals.pairs ? d.totals.done / d.totals.pairs : 0;
+  const teams = [...new Set(d.people.map(p => p.team).filter(Boolean))];
+  const catAvg = d.categories.map(c => {
+    const v = scored.map(p => p.cat360[c]).filter(x => x != null);
+    return { c, v: v.length ? v.reduce((a, b) => a + b, 0) / v.length : null };
+  });
+  const pending = d.people.filter(p => p.progress.done < p.progress.assigned).length;
+  return `
+  <div class="kpis d">
+    <div class="card kpi hero">${ring(rate, 96, 'ตอบกลับแล้ว ' + Math.round(rate * 100) + ' เปอร์เซ็นต์')}
+      <div><div class="v">${Math.round(rate * 100)}%</div><div style="font-size:17px;font-weight:500">ตอบกลับแล้ว ${d.totals.done} จาก ${d.totals.pairs} คู่</div>
+        <div class="l">${pending ? 'ยังมี ' + pending + ' คนที่ทำไม่ครบ · ดูในแท็บความคืบหน้า' : 'ทุกคนทำครบแล้ว'}</div></div></div>
+    <div class="card kpi"><div class="l">คะแนน 360 เฉลี่ย</div><div class="v">${f1(avg)}</div><div class="l">เต็ม 100 · ไม่รวมประเมินตนเอง</div></div>
+    <div class="card kpi"><div class="l">พร้อมใช้ผล</div><div class="v">${ready.length}<span class="muted" style="font-size:18px;font-weight:400"> / ${d.people.length} คน</span></div><div class="l">ผ่านเกณฑ์ ${d.rules.minGroups} มุมมองขึ้นไป</div></div>
+    <div class="card kpi"><div class="l">ต้องตรวจสอบ</div><div class="v">${d.people.reduce((s, p) => s + p.invalidCount, 0)}</div><div class="l">ชุดที่ตอบไม่ถึง ${d.rules.minAnswered} ข้อ</div></div>
+  </div>
+  <div class="grid2" style="grid-template-columns:minmax(300px,1fr) 2fr;align-items:start">
+    <div class="card">
+      <h3>รายหมวดทั้งร้าน</h3>
+      ${catAvg.map(x => `<div style="margin:12px 0"><div class="row" style="justify-content:space-between;font-size:14px"><span>${esc(x.c)}</span><b class="${x.v != null && x.v < 70 ? 'low' : ''}">${f1(x.v)}</b></div>
+        <div class="gbar" style="grid-template-columns:1fr;margin:8px 0 0"><span class="track"><i class="${x.v != null && x.v < 70 ? 'lowbar' : ''}" style="width:${x.v || 0}%"></i></span></div></div>`).join('')}
+      <div class="muted small">สีส้มอ่อน = ต่ำกว่า 70 ควรเริ่มพัฒนาจากหมวดนี้</div>
+    </div>
+    <div class="card stack">
+      <div class="row">
+        <h3 style="margin:0">รายบุคคล</h3><div class="spacer"></div>
+        <div class="fchips"><button class="${!D.team ? 'on' : ''}" onclick="D.team='';renderHr()">ทุกฝ่าย</button>${teams.map(t => `<button class="${D.team === t ? 'on' : ''}" onclick="D.team='${esc(t)}';renderHr()">${esc(t)}</button>`).join('')}</div>
+      </div>
+      <div class="row">
+        <input class="in sm" id="fq" placeholder="ค้นหาชื่อ" value="${esc(D.q)}" style="flex:1;min-width:160px">
+        <select class="in sm" onchange="D.sort=this.value;renderPeopleTable()">
+          <option value="score" ${D.sort === 'score' ? 'selected' : ''}>เรียงตามคะแนน 360</option>
+          <option value="gap" ${D.sort === 'gap' ? 'selected' : ''}>ประเมินตัวเองสูงเกินมากสุด</option>
+          <option value="name" ${D.sort === 'name' ? 'selected' : ''}>เรียงตามชื่อ</option></select>
+      </div>
+      <div id="ptable"></div>
+      <div class="muted small">สีช่องคะแนนไล่จากชมพู (ต่ำ) ไปเขียว (สูง) ชุดเดียวกับหน้าให้คะแนนบนมือถือ · แตะชื่อเพื่อดูผลละเอียด</div>
+    </div>
+  </div>`;
+}
+
+function renderPeopleTable() {
+  const d = D.data;
+  const k = D.q.trim().toLowerCase();
+  let list = d.people.filter(p => (!D.team || p.team === D.team) && (!k || (p.nick + ' ' + p.name).toLowerCase().indexOf(k) >= 0));
+  if (D.sort === 'name') list.sort((a, b) => a.nick.localeCompare(b.nick, 'th'));
+  else if (D.sort === 'gap') list.sort((a, b) => (a.gap == null ? 999 : a.gap) - (b.gap == null ? 999 : b.gap));
+  else list.sort((a, b) => (b.score360 == null ? -1 : b.score360) - (a.score360 == null ? -1 : a.score360));
+  const gapTxt = p => p.gap == null ? (p.self != null ? 'ตัวเอง ' + f1(p.self) : '') : 'ตัวเอง ' + f1(p.self) + ' · ' + (p.gap < 0 ? 'สูงกว่า ' + f1(-p.gap) : 'ต่ำกว่า ' + f1(p.gap));
+  document.getElementById('ptable').innerHTML = list.map(p => `
+    <div class="prow" role="button" tabindex="0" onclick="openPerson('${esc(p.id)}')" onkeydown="if(event.key==='Enter')openPerson('${esc(p.id)}')">
+      ${ava(p.id, p.nick, p.photo)}
+      <div class="nm"><b>${esc(p.nick)}</b><span class="muted small">${esc(p.position)} · ${esc(p.team)}</span></div>
+      ${chipScore(p.score360)}
+      <span class="small hide-sm ${p.gap != null && p.gap < -10 ? 'low' : 'muted'}">${p.score360 == null ? esc(p.status) : gapTxt(p)}</span>
+      <span class="hide-sm">${statusChip(p.status)}</span>
+    </div>`).join('') || '<div class="muted center" style="padding:24px">ไม่พบรายชื่อ</div>';
+}
+
+function hrPerson(p) {
+  const d = D.data;
+  const self = p.groups.find(g => g.rel === 'ประเมินตนเอง');
+  const cols = p.groups.concat(p.score360 != null ? [{ label: 'รวม 360', cat: p.cat360, q: p.q360, score: p.score360 }] : []);
+  // หมวดที่ประเมินตัวเองต่างจากผู้อื่นมากที่สุด
+  let worst = null;
+  if (self) d.categories.forEach(c => { const a = self.cat[c], b = p.cat360[c]; if (a != null && b != null && (!worst || Math.abs(a - b) > Math.abs(worst.diff))) worst = { c, diff: a - b }; });
+  const gapText = p.gap == null ? '' : p.gap < -5
+      ? `${p.nick}ประเมินตัวเองสูงกว่าที่คนอื่นมอง ${f1(-p.gap)} คะแนน${worst && worst.diff > 5 ? ' โดยเฉพาะหมวด' + worst.c : ''} ควรคุยเรื่องนี้ตอนให้ feedback`
+    : p.gap > 5 ? `คนอื่นมอง${p.nick}ดีกว่าที่${p.nick}ประเมินตัวเอง ${f1(p.gap)} คะแนน อาจประเมินตัวเองต่ำไป ควรชื่นชมให้มั่นใจขึ้น`
+      : `${p.nick}มองตัวเองใกล้เคียงกับที่คนอื่นมอง (ต่างกัน ${f1(Math.abs(p.gap))} คะแนน)`;
+  const ICON_INFO = '<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>';
+  const scoreTile = p.score360 == null
+    ? `<div class="tone-card center" style="background:var(--sunk);flex:1 1 220px"><div class="muted">คะแนนรวม 360</div><div class="big" style="font-size:28px;margin:8px 0">รอผล</div><div class="muted small">${esc(p.status)}</div></div>`
+    : `<div class="tone-card center" style="${toneStyle(lvl(p.score360))};flex:1 1 220px;display:flex;flex-direction:column;justify-content:center;gap:4px"><div style="font-size:14px">คะแนนรวม 360</div><div class="big">${f1(p.score360)}</div><div style="font-size:13px">เต็ม 100 · ไม่รวมประเมินตนเอง</div></div>`;
+  const kind = t => t === 'จุดเด่นที่สังเกตได้' ? ['จุดเด่น', 'var(--ok)'] : t === 'เรื่องที่ควรพัฒนา' ? ['ควรพัฒนา', 'var(--warn)'] : [t, 'var(--text-2)'];
+  return `
+  <div class="row noprint"><button class="link" onclick="D.person=null;renderHr()">‹ กลับไปรายชื่อ</button><div class="spacer"></div>
+    <button class="btn ghost sm" onclick="printReport()">พิมพ์ / บันทึก PDF</button></div>
+  <div class="row" style="align-items:stretch;gap:16px">
+    <div class="card row" style="flex:999 1 480px;gap:20px">
+      ${ava(p.id, p.nick, p.photo, 88)}
+      <div><h1 style="margin:0">${esc(p.name)} (${esc(p.nick)})</h1>
+        <div class="muted" style="font-size:15px">${esc(p.position)} · ฝ่าย${esc(p.team)} · ได้รับการประเมิน ${p.progress.received} จาก ${p.progress.expected} คน</div>
+        <div style="margin-top:8px">${statusChip(p.status)}</div></div>
+    </div>
+    ${scoreTile}
+  </div>
+  ${gapText ? `<div class="row" style="flex-wrap:nowrap;background:var(--peach);color:#6b3a14;border-radius:20px;padding:16px 20px;font-size:15px">${ICON_INFO}<span>${esc(gapText)}</span></div>` : ''}
+  ${p.hiddenRels.length ? `<div class="warn">กลุ่ม ${esc(p.hiddenRels.join(' / '))} มีผู้ประเมินไม่ถึง ${d.rules.minRaters} คน จึงไม่เปิดคะแนน (รักษาความลับผู้ประเมิน)</div>` : ''}
+  ${p.invalidCount ? `<div class="warn">มีคำตอบ ${p.invalidCount} ชุดที่ตอบไม่ถึง ${d.rules.minAnswered} ข้อ จึงไม่นำมาคิดคะแนน</div>` : ''}
+  <div class="card">
+    <div class="row" style="margin-bottom:12px"><h3 style="margin:0">ตัวเองมอง vs คนอื่นมอง</h3><div class="spacer"></div>
+      <div class="legend"><span><i class="sq" style="background:var(--accent)"></i>คนอื่นมอง (รวม 360)</span><span><i class="sq" style="background:#cfcac2"></i>ตัวเองมอง</span></div></div>
+    ${dumbbell(p, d.categories)}
+    <div class="muted small" style="margin-top:12px">คะแนนเต็ม 100 · ป้ายสีส้ม = ให้คะแนนตัวเองสูงกว่าที่คนอื่นมองเกิน 5 คะแนน ควรคุยตอนให้ feedback</div>
+    <details style="margin-top:16px"><summary>ดูคะแนนแยกตามมุมมองและรายข้อ</summary>
+      <div style="overflow-x:auto;margin-top:12px"><table class="t">
+        <thead><tr><th>หมวด / ข้อ</th>${cols.map(g => `<th class="num">${esc(g.label)}</th>`).join('')}</tr></thead>
+        <tbody>${d.categories.map(c => `<tr><td><b>${esc(c)}</b></td>${cols.map(g => `<td class="num">${scoreCell(g.cat[c])}</td>`).join('')}</tr>` +
+          d.questions.filter(q => q.category === c).map(q => `<tr><td class="muted">${esc(q.text)}</td>${cols.map(g => `<td class="num">${scoreCell(g.q[q.id])}</td>`).join('')}</tr>`).join('')).join('')}</tbody>
+      </table></div>
+      <div class="muted small" style="margin-top:8px">ตัวเลขสีส้มน้ำตาล = ต่ำกว่า 70</div>
+    </details>
+  </div>
+  <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+    <div class="card">
+      <h3>แยกตามคนประเมิน</h3>
+      ${p.groups.length ? p.groups.map(g => `<div class="gbar" style="grid-template-columns:104px 1fr 48px"><span>${esc(g.label)} <span class="n">${g.n}</span></span>
+        <span class="track"><i class="${g.rel === 'ประเมินตนเอง' ? 'self' : ''}" style="width:${g.score || 0}%"></i></span><b>${f1(g.score)}</b></div>`).join('')
+        : '<div class="muted">ยังไม่มีคำตอบ</div>'}
+    </div>
+    <div class="tone-card" style="background:var(--accent-soft)">
+      <h3>จุดแข็ง</h3>
+      ${p.strengths.length ? p.strengths.map(s => `<div class="row" style="justify-content:space-between;flex-wrap:nowrap;margin:8px 0;font-size:15px"><span>${esc(s.text)}</span><b>${f1(s.score)}</b></div>`).join('') : '<div class="muted">ยังไม่มีข้อมูล</div>'}
+    </div>
+    <div class="tone-card" style="background:var(--peach)">
+      <h3>เรื่องที่ควรพัฒนา</h3>
+      ${p.develop.length ? p.develop.map(s => `<div class="row" style="justify-content:space-between;flex-wrap:nowrap;margin:8px 0;font-size:15px"><span>${esc(s.text)}</span><b>${f1(s.score)}</b></div>`).join('') : '<div class="muted">ยังไม่มีข้อมูล</div>'}
+    </div>
+  </div>
+  <div class="card">
+    <h3>สิ่งที่คนอื่นเขียนถึง${esc(p.nick)}</h3>
+    ${p.comments.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">${p.comments.map(c => { const k = kind(c.topic); return `<div class="ccard"><span class="k" style="color:${k[1]}">${esc(k[0])}${c.source === 'ตนเอง' ? ' · เขียนถึงตัวเอง' : ''}</span><span>${esc(c.text)}</span></div>`; }).join('')}</div>`
+      : '<div class="muted">ยังไม่มีความคิดเห็น</div>'}
+    <div class="muted small" style="margin-top:12px">ไม่ระบุว่าใครเขียน</div>
+  </div>`;
+}
+
+/* ============================================================
+ * รายงานทางการสำหรับพิมพ์ / บันทึก PDF — A4 หน้าเดียว
+ * บนจอซ่อนไว้ (วางนอกจอเพื่อวัดความสูง) ตอนพิมพ์จะแสดงแทนหน้าจอ
+ * ============================================================ */
+const A4_BODY_PX = 270 * 96 / 25.4; // พื้นที่เนื้อหา: กระดาษ 296 มม. หักขอบบน-ล่าง 12 มม. และเผื่อ 2 มม.
+function fitReport() {
+  const el = document.querySelector('.printdoc'), inner = el && el.querySelector('.pd-in');
+  if (!inner) return;
+  el.style.setProperty('--fit', 1);
+  const h = inner.scrollHeight;
+  const z = h > A4_BODY_PX ? Math.max(0.6, A4_BODY_PX / h) : 1;
+  el.style.setProperty('--fit', z.toFixed(3));
+  el.style.setProperty('--ph', Math.ceil(h * z) + 'px'); // ความสูงหลังย่อ ให้กล่องหดตามจริง ไม่ดันขึ้นหน้าใหม่
+}
+function printReport() { fitReport(); setTimeout(() => window.print(), 50); }
+window.addEventListener('beforeprint', fitReport);
+
+function reportDoc(p) {
+  const d = D.data;
+  const self = p.groups.find(g => g.rel === 'ประเมินตนเอง');
+  const others = p.groups.filter(g => g.rel !== 'ประเมินตนเอง');
+  const today = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+  const tint = v => v == null ? '' : `background:${TONES[lvl(v)][0]};color:${TONES[lvl(v)][1]}`;
+  const cell = (v, cls) => v == null ? `<td class="na">–</td>` : `<td class="${cls || ''}" style="${tint(v)}">${f1(v)}</td>`;
+  const gapCell = (a, b) => {
+    if (a == null || b == null) return '<td class="na">–</td>';
+    const g = a - b;
+    return `<td class="pd-gap ${g > 5 ? 'over' : ''}">${g > 0 ? '+' : ''}${f1(g)}</td>`;
+  };
+  const head = `<tr><th>หมวดสมรรถนะ</th>${self ? '<th>ตนเอง</th>' : ''}${others.map(g => `<th>${esc(g.label)}<br><span style="font-weight:400">${g.n} คน</span></th>`).join('')}<th>รวม 360</th>${self ? '<th>ตนเอง − 360</th>' : ''}</tr>`;
+  const rows = d.categories.map(c => `<tr><td>${esc(c)}</td>${self ? cell(self.cat[c]) : ''}${others.map(g => cell(g.cat[c])).join('')}${cell(p.cat360[c], 'tot')}${self ? gapCell(self.cat[c], p.cat360[c]) : ''}</tr>`).join('');
+  const sumRow = `<tr class="sum"><td>คะแนนรวม</td>${self ? cell(self.score) : ''}${others.map(g => cell(g.score)).join('')}${cell(p.score360, 'tot')}${self ? gapCell(self.score, p.score360) : ''}</tr>`;
+
+  let worst = null;
+  if (self) d.categories.forEach(c => { const a = self.cat[c], b = p.cat360[c]; if (a != null && b != null && (!worst || Math.abs(a - b) > Math.abs(worst.diff))) worst = { c, diff: a - b }; });
+  const summary = p.score360 == null ? 'ยังมีผู้ประเมินไม่ครบเกณฑ์ จึงยังไม่สรุปคะแนนรวม 360'
+    : p.gap == null ? `คะแนนรวม 360 อยู่ที่ ${f1(p.score360)} จาก 100 (ไม่มีแบบประเมินตนเอง)`
+    : p.gap < -5 ? `ประเมินตนเองสูงกว่าที่ผู้อื่นมอง ${f1(-p.gap)} คะแนน${worst && worst.diff > 5 ? ' ต่างมากที่สุดในหมวด' + worst.c : ''} ควรหยิบประเด็นนี้คุยในการให้ feedback`
+    : p.gap > 5 ? `ผู้อื่นมองดีกว่าที่ประเมินตนเอง ${f1(p.gap)} คะแนน อาจประเมินตนเองต่ำเกินไป ควรชื่นชมจุดแข็งให้มั่นใจขึ้น`
+    : `มองตนเองใกล้เคียงกับที่ผู้อื่นมอง (ต่างกัน ${f1(Math.abs(p.gap))} คะแนน)`;
+
+  const notes = [];
+  if (p.hiddenRels.length) notes.push(`กลุ่ม ${p.hiddenRels.join(' / ')} มีผู้ประเมินไม่ถึง ${d.rules.minRaters} คน จึงไม่แสดงคะแนนเพื่อรักษาความลับ`);
+  if (p.invalidCount) notes.push(`มีคำตอบ ${p.invalidCount} ชุดตอบไม่ถึง ${d.rules.minAnswered} ข้อ จึงไม่นำมาคิดคะแนน`);
+  const scoreBox = p.score360 == null
+    ? `<div class="pd-score" style="background:#efede9"><span class="l">คะแนนรวม 360</span><span class="v" style="font-size:16pt">รอผล</span><span class="l">${esc(p.status)}</span></div>`
+    : `<div class="pd-score" style="${tint(p.score360)}"><span class="l">คะแนนรวม 360</span><span class="v">${f1(p.score360)}</span><span class="l">เต็ม 100 · ไม่รวมตนเอง</span></div>`;
+  const list = arr => arr.length ? `<ul class="pd-list">${arr.map(s => `<li><span>${esc(s.text)}</span><b>${f1(s.score)}</b></li>`).join('')}</ul>` : '<div class="pd-note" style="margin:0">ยังไม่มีข้อมูล</div>';
+  const cms = p.comments.slice(0, 10);
+  const kind = t => t === 'จุดเด่นที่สังเกตได้' ? 'จุดเด่น' : t === 'เรื่องที่ควรพัฒนา' ? 'ควรพัฒนา' : t;
+
+  return `
+  <section class="printdoc" aria-hidden="true"><div class="pd-in">
+    <div class="pd-top">
+      <div><div class="pd-org">${esc(d.org)}</div><div class="pd-title">รายงานผลการประเมิน 360 องศา รายบุคคล</div></div>
+      <div class="pd-meta"><span class="pd-conf">เอกสารลับ</span><br>${esc(d.cycle)}<br>ออกรายงาน ${today}</div>
+    </div>
+    <div class="pd-id">
+      <div class="pd-who">${ava(p.id, p.nick, p.photo, 76).replace('loading="lazy" ', '')}
+        <div><div class="pd-name">${esc(p.name)} (${esc(p.nick)})</div>
+          <div class="pd-kv"><span>ตำแหน่ง</span><span>${esc(p.position)}</span><span>ฝ่าย</span><span>${esc(p.team)}</span>
+            <span>ผู้ประเมิน</span><span>ได้รับ ${p.progress.received} จาก ${p.progress.expected} คน</span><span>สถานะผล</span><span>${esc(p.status)}</span></div></div></div>
+      ${scoreBox}
+    </div>
+    <div class="pd-sum"><b>สรุป:</b> ${esc(summary)}</div>
+    <div class="pd-h">คะแนนรายหมวด แยกตามมุมมองผู้ประเมิน <small>คะแนนเต็ม 100 · สีพื้นไล่จากชมพู (ต่ำ) ถึงเขียว (สูง)</small></div>
+    <table class="pd-t"><colgroup><col class="c1"></colgroup><thead>${head}</thead><tbody>${rows}${sumRow}</tbody></table>
+    <div class="pd-2">
+      <div><div class="pd-h">จุดแข็ง <small>3 ข้อที่ได้คะแนนสูงสุด</small></div>${list(p.strengths)}</div>
+      <div><div class="pd-h">เรื่องที่ควรพัฒนา <small>3 ข้อที่ได้คะแนนต่ำสุด</small></div>${list(p.develop)}</div>
+    </div>
+    <div class="pd-h">ความคิดเห็นจากผู้ประเมิน <small>ไม่ระบุตัวผู้เขียน${p.comments.length > cms.length ? ` · แสดง ${cms.length} จาก ${p.comments.length} ข้อความ` : ''}</small></div>
+    ${cms.length ? `<div class="pd-cm">${cms.map(c => `<div class="${c.topic === 'เรื่องที่ควรพัฒนา' ? 'dev' : ''}"><i>${esc(kind(c.topic))}${c.source === 'ตนเอง' ? ' · เขียนถึงตนเอง' : ''}</i><span>${esc(c.text)}</span></div>`).join('')}</div>` : '<div class="pd-note" style="margin:0">ไม่มีความคิดเห็น</div>'}
+    <div class="pd-note">วิธีคิดคะแนน: คะแนนแต่ละคน = ค่าเฉลี่ยข้อที่ตอบ (1–5) × 20 ไม่นับข้อ "ไม่มีข้อมูล" · คะแนนกลุ่ม = ค่าเฉลี่ยของผู้ประเมินในกลุ่ม · รวม 360 = ค่าเฉลี่ยของกลุ่มที่แสดงผล ไม่รวมการประเมินตนเอง · ต้องตอบอย่างน้อย ${d.rules.minAnswered} ข้อจึงนับ${notes.length ? '<br>หมายเหตุ: ' + esc(notes.join(' · ')) : ''}</div>
+    <div class="pd-sign"><div>ผู้รับการประเมิน<br>วันที่ ........................</div><div>หัวหน้างาน<br>วันที่ ........................</div><div>ฝ่ายบุคคล (HR)<br>วันที่ ........................</div></div>
+    <div class="pd-foot"><span>ใช้เพื่อการพัฒนาตนเองเท่านั้น ห้ามเผยแพร่ต่อ</span><span>${esc(d.org)} · ${esc(d.cycle)}</span></div>
+  </div></section>`;
+}
+
+/** จุดเด่นฝั่ง HR: ตัวเองมอง vs คนอื่นมอง — แท่งคู่ต่อหมวด พร้อมตัวเลขและป้ายสรุปส่วนต่าง */
+function dumbbell(p, cats) {
+  if (p.score360 == null && !p.self) return '<div class="muted">ยังไม่มีข้อมูลพอแสดงกราฟ</div>';
+  const self = p.groups.find(g => g.rel === 'ประเมินตนเอง');
+  const bar = (cls, label, v) => v == null ? '' :
+    `<div class="sv-bar ${cls}"><span class="sv-l">${label}</span><span class="sv-track"><i style="width:${v}%"></i></span><b>${f1(v)}</b></div>`;
+  return cats.map(c => {
+    const a = self ? self.cat[c] : null, b = p.cat360[c];
+    let tag = '';
+    if (a != null && b != null) {
+      const g = a - b;
+      tag = g > 5 ? `<span class="sv-tag over">ตัวเองสูงกว่า ${f1(g)}</span>`
+        : g < -5 ? `<span class="sv-tag under">คนอื่นมองดีกว่า ${f1(-g)}</span>`
+        : `<span class="sv-tag">ใกล้เคียงกัน</span>`;
+    }
+    return `<div class="sv-row"><div class="sv-head"><span>${esc(c)}</span>${tag}</div>
+      ${bar('oth', 'คนอื่นมอง', b)}${bar('self', 'ตัวเองมอง', a)}</div>`;
+  }).join('');
+}
+
+function hrProgress() {
+  const d = D.data;
+  const list = d.people.slice().sort((a, b) => (a.progress.done / (a.progress.assigned || 1)) - (b.progress.done / (b.progress.assigned || 1)));
+  const notDone = list.filter(p => p.progress.done < p.progress.assigned);
+  return `
+  <div class="card stack">
+    <div class="row"><h3 style="margin:0">ใครยังทำไม่ครบ (${notDone.length} คน)</h3><div class="spacer"></div>
+      <span class="muted small">ภาพรวม ${d.totals.done}/${d.totals.pairs} คู่</span></div>
+    <div style="overflow-x:auto"><table class="t">
+      <thead><tr><th>ชื่อ</th><th class="hide-sm">ฝ่าย</th><th>ประเมินคนอื่นแล้ว</th><th class="c">ได้รับการประเมิน</th></tr></thead>
+      <tbody>${list.map(p => {
+        const pct = p.progress.assigned ? p.progress.done * 100 / p.progress.assigned : 0;
+        return `<tr><td><b>${esc(p.nick)}</b> <span class="muted small">${esc(p.position)}</span></td><td class="hide-sm">${esc(p.team)}</td>
+          <td><div class="hb"><span class="track"><i style="width:${pct}%;background:${pct >= 100 ? 'var(--ok)' : 'var(--accent)'}"></i></span><b style="width:56px">${p.progress.done}/${p.progress.assigned}</b></div></td>
+          <td class="c"><span class="num">${p.progress.received}/${p.progress.expected}</span></td></tr>`;
+      }).join('')}</tbody>
+    </table></div>
+    <div class="muted small">ส่งลิงก์หรือ QR ในกลุ่ม LINE อีกครั้งเพื่อเตือนคนที่ยังทำไม่ครบ</div>
+  </div>`;
+}
+
+/* ============================================================
+ * โหมดเดโม — ทำงานเมื่อเปิดไฟล์นอก Apps Script และมี window.DEMO_DATA
+ * ============================================================ */
+const Demo = (() => {
+  const X = window.DEMO_DATA;
+  if (!X) return {};
+  const byId = {}; X.employees.forEach(e => byId[e.id] = e);
+  const order = ['ประเมินตนเอง', 'ผู้ใต้บังคับบัญชา', 'เพื่อนร่วมงาน', 'ผู้ร่วมงานต่างฝ่าย', 'ผู้บังคับบัญชา'];
+  const payload = rater => ({
+    ok: true, org: X.config.org, cycle: X.config.cycle, scale: X.scale, naLabel: X.naLabel, minAnswered: X.config.minAnswered,
+    rater: { id: rater.id, name: rater.name, nick: rater.nick }, questions: X.questions,
+    tasks: X.pairs.filter(p => p.raterId === rater.id).map(p => {
+      const e = byId[p.rateeId];
+      return { pairId: p.pairId, rateeId: e.id, rateeName: e.name, rateeNick: e.nick, position: e.position, rel: p.rel, relLabel: X.relLabel[p.rel], isSelf: p.rel === 'ประเมินตนเอง', done: p.done, qids: e.qids, rateePhoto: e.photo || '' };
+    }).sort((a, b) => order.indexOf(a.rel) - order.indexOf(b.rel))
+  });
+  const auth = (id, pin) => { const e = byId[id]; return e && e.pin === String(pin) ? e : null; };
+  return {
+    apiStaffList: () => ({ ok: true, org: X.config.org, cycle: X.config.cycle, isOpen: true, staff: X.employees.map(e => ({ id: e.id, nick: e.nick, name: e.name, position: e.position })) }),
+    apiLogin: (id, pin) => { const e = auth(id, pin); return e ? payload(e) : { ok: false, msg: 'PIN ไม่ถูกต้อง' }; },
+    apiSubmit: (id, pin, pairId) => {
+      const e = auth(id, pin); if (!e) return { ok: false, msg: 'กรุณาเข้าสู่ระบบใหม่' };
+      X.pairs.find(x => x.pairId === pairId).done = true; return payload(e);
+    },
+    apiHrData: pin => pin === X.config.hrPin ? X.hr : { ok: false, msg: 'PIN ไม่ถูกต้อง' }
+  };
+})();
+
+function switchMode(m) {
+  MODE = m;
+  document.getElementById('dStaff').classList.toggle('on', m === 'staff');
+  document.getElementById('dHr').classList.toggle('on', m === 'hr');
+  try { location.hash = m === 'hr' ? 'hr' : ''; } catch (e) {}
+  m === 'hr' ? hrStart() : staffStart();
+}
+
+/* ============================================================
+ * เริ่มทำงาน
+ * ============================================================ */
+if (DEMO) {
+  document.getElementById('demoBar').hidden = false;
+  switchMode(location.hash === '#hr' ? 'hr' : 'staff');
+} else if (!HAS_GAS) {
+  $app.innerHTML = '<div class="wrap"><div class="hero"><div class="eyebrow">แบบประเมิน 360 องศา</div><h1>ไฟล์นี้ยังไม่ได้ติดตั้ง</h1></div>' +
+    '<div class="card stack"><div>หน้านี้ต้องเปิดผ่านลิงก์ Web App หลังติดตั้งใน Google Apps Script ระบบจึงจะดึงรายชื่อและบันทึกคำตอบได้</div>' +
+    '<div class="muted small">ขั้นตอนติดตั้งอยู่ใน README.md หัวข้อที่ 1</div></div></div>';
+} else {
+  MODE === 'hr' ? hrStart() : staffStart();
+}
+</script>
+</body>
+</html>

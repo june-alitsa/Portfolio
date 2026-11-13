@@ -24,9 +24,16 @@ export default function Work() {
                 <div className="card p-4 sm:p-5">
                   <div className="mb-3 flex items-center justify-between">
                     <span className="label">{p.category}</span>
-                    <span className="mono text-[10px] uppercase tracking-wider text-faint">{ui.work.illustrative}</span>
+                    <span className="mono text-[10px] uppercase tracking-wider text-faint">{p.shots ? ui.work.mockData : ui.work.illustrative}</span>
                   </div>
-                  {Chart && <Chart />}
+                  {p.shots ? (
+                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                      {p.shots.map((src, k) => (
+                        <img key={src} src={src} alt="" loading="lazy" width="390" height="844"
+                             className={`w-full rounded-[10px] border border-line ${k === 1 ? '' : 'sm:translate-y-4'}`} />
+                      ))}
+                    </div>
+                  ) : Chart && <Chart />}
                 </div>
                 <div>
                   <p className="mono text-[11px] text-accent">0{i + 1}</p>
@@ -40,6 +47,12 @@ export default function Work() {
                   <div className="mt-6 flex flex-wrap gap-1.5">
                     {p.tags.map((t) => <span key={t} className="chip">{t}</span>)}
                   </div>
+                  {p.links && (
+                    <div className="mt-6 flex flex-wrap gap-3">
+                      {p.links.demo && <a href={p.links.demo} target="_blank" rel="noopener" className="btn-ink">{ui.work.demo} <span aria-hidden>↗</span></a>}
+                      {p.links.repo && <a href={p.links.repo} target="_blank" rel="noopener" className="btn-line">{ui.work.repo} <span aria-hidden>↗</span></a>}
+                    </div>
+                  )}
                 </div>
               </Reveal>
             </li>

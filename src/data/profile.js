@@ -152,7 +152,20 @@ export const certifications = []
 // ผลงาน — สรุปจากประสบการณ์ใน CV
 // chart = key ใน src/charts/index.js ; กราฟทุกตัวเป็นภาพประกอบ (illustrative) ไม่ใช่ตัวเลขจริง
 // featured: true = โชว์ในหน้าแรกทันที (ที่เหลือซ่อนอยู่หลังปุ่ม View all projects)
+// shots = ภาพหน้าจอจริงแทนกราฟ ; links = ปุ่มลองเดโม / ดูโค้ด
 export const projects = [
+  {
+    id: 'hr360',
+    featured: true,
+    shots: ['/projects/hr360-01-pick-name.png', '/projects/hr360-04-rate.png', '/projects/hr360-05-review.png'],
+    links: { demo: '/hr-360/', repo: 'https://github.com/june-alitsa/hr-360-showcase' },
+    category: 'HR Tech',
+    title: 'Mobile 360° Feedback System',
+    description:
+      'Built a paperless 360-degree evaluation for front-line staff on Google Sheets + Apps Script — staff scan a QR code, enter a PIN, and rate colleagues on their phones, while HR sees per-person results and prints a one-page A4 report. No server, no subscription.',
+    tags: ['Google Sheets', 'Apps Script', '360 feedback', 'Performance'],
+    highlights: ['QR + PIN, no login or app install', 'Live HR dashboard per person', 'Anonymous — groups under 3 hidden'],
+  },
   {
     id: 'migration',
     featured: true,
@@ -317,11 +330,14 @@ export const ui = {
   work: {
     label: 'Selected work',
     title: { pre: 'Work that kept ', em: 'the business running.' },
-    intro: 'Six pieces of work that best show the range — from a group-wide payroll migration to organization design and labor-law compliance. Every visual is an illustrative sketch of the deliverable; real employee and company data stays with the company.',
+    intro: 'Seven pieces of work that best show the range — from a mobile 360° feedback system and a group-wide payroll migration to organization design and labor-law compliance. Charts are illustrative sketches and the 360° demo runs on mock data; real employee and company data stays with the company.',
     illustrative: 'illustrative',
     more: (n) => `${n} more pieces of work`,
     hide: 'Hide',
     askMe: 'Ask me about it',
+    mockData: 'mock data',
+    demo: 'Try the live demo',
+    repo: 'View on GitHub',
     caseChips: ['Humansoft', '14 companies', '1–3 day close'],
   },
   contact: {
